@@ -29,6 +29,10 @@
             + "/51664f123b50414da85e963f92c721f0"
             + "/998/256/{Z}/{X}/{Y}.png")
             .hosts(["a.", "b.", "c.", ""])));
+        
+        if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
+            map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
+        });
     </script>
 </body>
 </html>
