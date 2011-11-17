@@ -6,6 +6,13 @@
     <script src="{{app_url}}/d3.min.js"></script>
     <script src="{{app_url}}/fermata.min.js"></script>
     <script src="{{app_url}}/polymaps.min.js"></script>
+    
+    <!-- temporary: allow quicker local development -->
+    <script src="../_attachments/d3.min.js"></script>
+    <script src="../_attachments/fermata.min.js"></script>
+    <script src="../_attachments/polymaps.min.js"></script>
+    <!-- /temporary -->
+    
     <style>
         #map { position: absolute; top: 3em; bottom: 1em; left: 0; right: 0; padding: 0; margin: 0; }
     </style>
@@ -17,9 +24,11 @@
         <a href="{{app_url}}/_show/files/{{id}}">Files...</a>
         <input name="title" placeholder="Document title" size="140" value="{{ title }}"></input>
         <button>Save</button>
-        <textarea name="content" hidden>{{ content }}</textarea>
+        <!--<textarea id="geojson_content" name="content" hidden>{{ content }}</textarea>-->
+        <textarea id="geojson_content" name="content" hidden></textarea>    
     <form>
     <div id="map"></div>
+    
     <script>
         var po = org.polymaps,
             map = po.map().container(d3.select('#map').append("svg:svg").node());
@@ -30,9 +39,29 @@
             + "/998/256/{Z}/{X}/{Y}.png")
             .hosts(["a.", "b.", "c.", ""])));
         
-        if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
+        var geojson_content = d3.select("#geojson_content").node();
+        if (geojson_content.value) {
+            // TODO: draw, zoom to existing data
+        } else if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
             map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
+            addEditablePoint();
         });
+        
+        // TEMPORARY: start prototyping basic editing with a lowly point
+        function addEditablePoint () {
+            var vector = po.geoJson();
+            map.add(vector);
+            vector
+                .on('load', po.stylist().attr('fill', "orange").attr('stroke', "red").attr('r', 5))
+                .on('load', function (e) {
+                    e.features.forEach(function (f) {
+                        d3.select(f.element).on("click", function () {
+                            console.log(this, arguments);
+                        });
+                    });
+                });
+            vector.features([{type:"Feature", geometry:{type:"Point", coordinates:[map.center().lon, map.center().lat]}, properties:null}]);
+        }
     </script>
 </body>
 </html>
