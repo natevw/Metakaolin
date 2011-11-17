@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Metakaolin — Files for "{{ title }}"</title>
+    
+    <style>
+        .empty { font-style: italic; }
+        
+        #upload { display: none; }
+        #upload.yes { display: block; }
+        #no_upload { font-family: monospace; }
+        #no_upload.notyes { display: none; }
+        #file_name { width: 250px; }
+        
+        #error { display: none; color: red; }
+        #error.happened { display: inline; }
+    </style>
+</head>
+<body>
+    <a href="{{app_url}}/_show/editor/{{id}}">← map</a>
+    
+    <ul>
+        {{{ files }}}
+    </ul>
+    
+    <form id="upload" class="{{may_upload}}">
+        <input id="file_choice" type="file"></input><br>
+        <label for="file_name">Name: </label><input id="file_name" type="text" disabled></input><br>
+        <button id="start_upload" type="button" disabled>Upload</button>
+        <span id="error">An error occurred while uploading :-/</span>
+    </form>
+    <p id="no_upload" class="not{{may_upload}}">(You must save your note before adding files.)</p>
+    <script id="config" type="text/plain" data-doc_url="{{db_url}}/{{id}}" data-doc_rev="{{revno}}"></script>
+    <script>
+        var config = document.getElementById('config'),
+            file_chooser = document.getElementById('file_choice'),
+            file_namer = document.getElementById('file_name'),
+            file_uploader = document.getElementById('start_upload'),
+            error_display = document.getElementById('error');
+        file_chooser.addEventListener('change', function () {
+            if (file_chooser.files && file_chooser.files.length) {
+                file_namer.value = file_chooser.files[0].name;
+                file_uploader.disabled = file_namer.disabled = false;
+            } else {
+                file_uploader.disabled = file_namer.disabled = true;
+            }
+            error_display.className = '';
+        }, false);
+        file_uploader.addEventListener('click', function () {
+            var file = file_chooser.files[0],
+                name = file_namer.value || file.name,
+                docURL = config.getAttribute('data-doc_url'),
+                docRev = config.getAttribute('data-doc_rev');
+            
+            var req = new XMLHttpRequest();
+            req.open('PUT', docURL + '/' + encodeURIComponent(name) + '?rev=' + docRev);
+            req.send(file);
+            error_display.className = '';
+            req.onreadystatechange = function () {
+                if (this.readyState != this.DONE) return;
+                if (this.status == 201) {
+                    location.reload();
+                } else {
+                    console.warn("Upload returned:", this.status, this.responseText);
+                    error_display.className = 'happened';
+                }
+            };
+        }, false);
+    </script>
+    
+</body>
+</html>

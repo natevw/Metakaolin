@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Metakaolin — Edit "{{ title }}"</title>
+    <script src="{{app_url}}/d3.min.js"></script>
+    <script src="{{app_url}}/fermata.min.js"></script>
+    <script src="{{app_url}}/polymaps.min.js"></script>
+    <style>
+        #map { position: absolute; top: 3em; bottom: 1em; left: 0; right: 0; padding: 0; margin: 0; }
+    </style>
+</head>
+<body>
+    <form action="{{app_url}}/_update/content/{{id}}" method="POST">
+        <a href="{{app_url}}/_list/summary/by_moddate">←</a>
+        <!--<a href="{{app_url}}/_show/viewer/{{id}}">Cancel</a>-->
+        <a href="{{app_url}}/_show/files/{{id}}">Files...</a>
+        <input name="title" placeholder="Document title" size="140" value="{{ title }}"></input>
+        <button>Save</button>
+        <textarea name="content" hidden>{{ content }}</textarea>
+    <form>
+    <div id="map"></div>
+    <script>
+        var po = org.polymaps,
+            map = po.map().container(d3.select('#map').append("svg:svg").node());
+        map.add(po.interact());
+        map.add(po.image()
+            .url(po.url("http://{S}tile.cloudmade.com"
+            + "/51664f123b50414da85e963f92c721f0"
+            + "/998/256/{Z}/{X}/{Y}.png")
+            .hosts(["a.", "b.", "c.", ""])));
+    </script>
+</body>
+</html>
