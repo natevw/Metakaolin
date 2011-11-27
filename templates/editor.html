@@ -30,6 +30,39 @@
     <div id="map"></div>
     
     <script>
+        var po_editor = function (geom) {
+            var editor = po.layer(load);
+            
+            editor.tile(false);
+            
+            function load(tile, tileProj) {
+                tile.element = po.svg('g');
+                
+                var proj = tileProj(tile),
+                    verts = geom.coordinates.map(function (coord) { return proj.locationPoint({lat:coord[1], lon:coord[0]}); });
+                
+                var poly = po.svg('polygon'),
+                    data = verts.slice(0,-1).map(function (pt) { return pt.x + ',' + pt.y; }).join(' ');
+                poly.setAttribute('points', data);
+                poly.setAttribute('stroke', "grey");
+                poly.setAttribute('fill', "none");
+                tile.element.appendChild(poly);
+                
+                verts.forEach(function (pt) {
+                    var c = po.svg('circle');
+                    c.setAttribute('r', 4.5);
+                    c.setAttribute('cx', pt.x);
+                    c.setAttribute('cy', pt.y);
+                    tile.element.appendChild(c);
+                });
+                
+                console.log("Loaded tile: ", tile.zoom, tile.row, tile.column);
+            }
+            
+            return editor;
+        };
+    </script>
+    <script>
         var po = org.polymaps,
             map = po.map().container(d3.select('#map').append("svg:svg").node());
         map.add(po.interact());
@@ -49,6 +82,18 @@
         
         // TEMPORARY: start prototyping basic editing with a lowly point
         function addEditablePoint () {
+            var shape = {type:"LineString", coordinates:[]},
+                size = 0.00125,
+                center = map.center();
+            shape.coordinates.push([center.lon - size, center.lat + size]);
+            shape.coordinates.push([center.lon + size, center.lat + size]);
+            shape.coordinates.push([center.lon + size, center.lat - size]);
+            shape.coordinates.push([center.lon - size, center.lat - size]);
+            shape.coordinates.push([center.lon - size, center.lat + size]);
+            
+            map.add(po_editor(shape));
+            return;
+            
             var vector = po.geoJson();
             map.add(vector);
             vector
