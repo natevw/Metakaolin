@@ -55,7 +55,7 @@
                 }
                 
                 var prevLine = null,
-                    vertexInfo = geom.coordinates.map(function (c,i) {
+                    vertexInfo = geom.coordinates.map(function (c) {
                         var info = {
                             originalCoordinate: c,
                             marker: po.svg('circle'),
@@ -67,7 +67,9 @@
                         prevLine = info.nextLine;
                         return info;
                     });
-                vertexInfo[0].prevLine = prevLine;      // hook last line to first vertex
+                var lastInfo = vertexInfo.pop();       // discard duplicate last point
+                vertexInfo[0].secondCoordinate = lastInfo.originalCoordinate;
+                vertexInfo[0].prevLine = lastInfo.prevLine;      // hook last line to first vertex
                 
                 vertexInfo.forEach(function (info) {
                     update(info);
@@ -99,6 +101,10 @@
                         coord = editor.map().pointLocation(mouse);
                     info.originalCoordinate[0] = coord.lon;
                     info.originalCoordinate[1] = coord.lat;
+                    if (info.secondCoordinate) {    // write to duplicate last position
+                        info.secondCoordinate[0] = coord.lon;
+                        info.secondCoordinate[1] = coord.lat;
+                    }
                     update(info);
                     e.preventDefault();
                     e.stopPropagation();
@@ -112,6 +118,8 @@
                     editingVertex = null;
                     e.preventDefault();
                     e.stopPropagation();
+                    
+                    editor.reload();       // other zoom levels may have old version cached :-(
                 }, false);
                 
                 console.log("Loaded tile: ", tile.zoom, tile.row, tile.column);
