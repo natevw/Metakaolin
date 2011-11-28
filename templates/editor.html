@@ -38,22 +38,66 @@
             function load(tile, tileProj) {
                 tile.element = po.svg('g');
                 
-                var proj = tileProj(tile),
-                    verts = geom.coordinates.map(function (coord) { return proj.locationPoint({lat:coord[1], lon:coord[0]}); });
+                var proj = tileProj(tile);
+                function update(coord, markerCircle, prevLine, nextLine) {
+                    var pt = proj.locationPoint({lat:coord[1], lon:coord[0]});
+                    markerCircle.setAttribute('cx', pt.x);
+                    markerCircle.setAttribute('cy', pt.y);
+                    if (nextLine) {
+                        nextLine.setAttribute('x1', pt.x);
+                        nextLine.setAttribute('y1', pt.y);
+                    }
+                    if (prevLine) {
+                        prevLine.setAttribute('x2', pt.x);
+                        prevLine.setAttribute('y2', pt.y);
+                    }
+                }
                 
-                var poly = po.svg('polygon'),
-                    data = verts.slice(0,-1).map(function (pt) { return pt.x + ',' + pt.y; }).join(' ');
-                poly.setAttribute('points', data);
-                poly.setAttribute('stroke', "grey");
-                poly.setAttribute('fill', "none");
-                tile.element.appendChild(poly);
+                var prevLine = null,
+                    vertexInfo = geom.coordinates.map(function (c) {
+                        var info = {
+                            originalCoordinate: c,
+                            marker: po.svg('circle'),
+                            nextLine: po.svg('line'),
+                            prevLine: prevLine
+                        };
+                        info.marker.setAttribute('r', 5);
+                        info.nextLine.setAttribute('stroke', "grey");
+                        prevLine = info.nextLine;
+                        return info;
+                    });
+                vertexInfo[0].prevLine = prevLine;      // hook last line to first vertex
                 
-                verts.forEach(function (pt) {
-                    var c = po.svg('circle');
-                    c.setAttribute('r', 4.5);
-                    c.setAttribute('cx', pt.x);
-                    c.setAttribute('cy', pt.y);
-                    tile.element.appendChild(c);
+                vertexInfo.forEach(function (info) {
+                    update(info.originalCoordinate, info.marker, info.prevLine, info.nextLine);
+                    tile.element.appendChild(info.nextLine);
+                });
+                vertexInfo.forEach(function (info) {
+                    tile.element.appendChild(info.marker);
+                    info.marker.addEventListener('mousedown', function (e) {
+                        info.marker.setAttribute('fill', "yellow");
+                        info.editing = true;
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                    info.marker.addEventListener('mousemove', function (e) {        // TODO: this needs to be registered on layer instead
+                        if (!info.editing) return;
+                        
+                        var mouse = editor.map().mouse(e),
+                            coord = editor.map().pointLocation(mouse);
+                        console.log(mouse, coord);
+                        info.originalCoordinate[0] = coord.lon;
+                        info.originalCoordinate[1] = coord.lat;
+                        update(info.originalCoordinate, info.marker, info.prevLine, info.nextLine);
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                    info.marker.addEventListener('mouseup', function (e) {
+                        info.marker.setAttribute('fill', '');
+                        info.editing = false;
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
                 });
                 
                 console.log("Loaded tile: ", tile.zoom, tile.row, tile.column);
