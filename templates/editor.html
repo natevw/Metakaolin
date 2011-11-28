@@ -54,7 +54,7 @@
                 }
                 
                 var prevLine = null,
-                    vertexInfo = geom.coordinates.map(function (c) {
+                    vertexInfo = geom.coordinates.map(function (c,i) {
                         var info = {
                             originalCoordinate: c,
                             marker: po.svg('circle'),
@@ -72,33 +72,48 @@
                     update(info.originalCoordinate, info.marker, info.prevLine, info.nextLine);
                     tile.element.appendChild(info.nextLine);
                 });
+                
+                var editingVertex = null,
+                    mouseListener = po.svg('rect');
+                mouseListener.setAttribute('width', 100);
+                mouseListener.setAttribute('height', 100);
+                tile.element.appendChild(mouseListener);
+                
                 vertexInfo.forEach(function (info) {
                     tile.element.appendChild(info.marker);
                     info.marker.addEventListener('mousedown', function (e) {
                         info.marker.setAttribute('fill', "yellow");
-                        info.editing = true;
+                        tile.element.setAttribute('pointer-events', "all");
+                        editingVertex = info;
                         e.preventDefault();
                         e.stopPropagation();
                     }, false);
-                    info.marker.addEventListener('mousemove', function (e) {        // TODO: this needs to be registered on layer instead
-                        if (!info.editing) return;
-                        
-                        var mouse = editor.map().mouse(e),
-                            coord = editor.map().pointLocation(mouse);
-                        console.log(mouse, coord);
-                        info.originalCoordinate[0] = coord.lon;
-                        info.originalCoordinate[1] = coord.lat;
-                        update(info.originalCoordinate, info.marker, info.prevLine, info.nextLine);
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }, false);
-                    info.marker.addEventListener('mouseup', function (e) {
-                        info.marker.setAttribute('fill', '');
-                        info.editing = false;
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }, false);
+                    
                 });
+                
+                window.addEventListener('mousemove', function (e) {
+                    if (!editingVertex) return;
+                    
+                    var info = editingVertex,
+                        mouse = editor.map().mouse(e),
+                        coord = editor.map().pointLocation(mouse);
+                    console.log(mouse, coord);
+                    info.originalCoordinate[0] = coord.lon;
+                    info.originalCoordinate[1] = coord.lat;
+                    update(info.originalCoordinate, info.marker, info.prevLine, info.nextLine);
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+                window.addEventListener('mouseup', function (e) {
+                    if (!editingVertex) return;
+                    
+                    var info = editingVertex;
+                    info.marker.setAttribute('fill', '');
+                    tile.element.setAttribute('pointer-events', '');
+                    editingVertex = null;
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
                 
                 console.log("Loaded tile: ", tile.zoom, tile.row, tile.column);
             }
