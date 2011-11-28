@@ -39,17 +39,18 @@
                 tile.element = po.svg('g');
                 
                 var proj = tileProj(tile);
-                function update(coord, markerCircle, prevLine, nextLine) {
-                    var pt = proj.locationPoint({lat:coord[1], lon:coord[0]});
-                    markerCircle.setAttribute('cx', pt.x);
-                    markerCircle.setAttribute('cy', pt.y);
-                    if (nextLine) {
-                        nextLine.setAttribute('x1', pt.x);
-                        nextLine.setAttribute('y1', pt.y);
+                function update(vertex) {
+                    var coord = vertex.originalCoordinate,
+                        pt = proj.locationPoint({lat:coord[1], lon:coord[0]});
+                    vertex.marker.setAttribute('cx', pt.x);
+                    vertex.marker.setAttribute('cy', pt.y);
+                    if (vertex.nextLine) {
+                        vertex.nextLine.setAttribute('x1', pt.x);
+                        vertex.nextLine.setAttribute('y1', pt.y);
                     }
-                    if (prevLine) {
-                        prevLine.setAttribute('x2', pt.x);
-                        prevLine.setAttribute('y2', pt.y);
+                    if (vertex.prevLine) {
+                        vertex.prevLine.setAttribute('x2', pt.x);
+                        vertex.prevLine.setAttribute('y2', pt.y);
                     }
                 }
                 
@@ -69,7 +70,7 @@
                 vertexInfo[0].prevLine = prevLine;      // hook last line to first vertex
                 
                 vertexInfo.forEach(function (info) {
-                    update(info.originalCoordinate, info.marker, info.prevLine, info.nextLine);
+                    update(info);
                     tile.element.appendChild(info.nextLine);
                 });
                 
@@ -88,7 +89,6 @@
                         e.preventDefault();
                         e.stopPropagation();
                     }, false);
-                    
                 });
                 
                 window.addEventListener('mousemove', function (e) {
@@ -97,10 +97,9 @@
                     var info = editingVertex,
                         mouse = editor.map().mouse(e),
                         coord = editor.map().pointLocation(mouse);
-                    console.log(mouse, coord);
                     info.originalCoordinate[0] = coord.lon;
                     info.originalCoordinate[1] = coord.lat;
-                    update(info.originalCoordinate, info.marker, info.prevLine, info.nextLine);
+                    update(info);
                     e.preventDefault();
                     e.stopPropagation();
                 }, false);
