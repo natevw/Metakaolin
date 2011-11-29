@@ -76,6 +76,7 @@
                 var lastInfo = vertexInfo.pop();       // discard duplicate last point
                 vertexInfo[0].secondCoordinate = lastInfo.originalCoordinate;
                 vertexInfo[0].prevLine = lastInfo.prevLine;      // hook last line to first vertex
+                vertexInfo[0].marker.setAttribute('fill', "grey");
                 
                 var editingVertex = null;
                 vertexInfo.forEach(function (info, index) {
@@ -108,8 +109,6 @@
                         e.stopPropagation();
                     }, false);
                     info.nextLine.addEventListener('mousedown', function (e) {
-                        console.log("ENTER THE VORTEX!!!!!");
-                        
                         var mouse = editor.map().mouse(e),
                             coord = editor.map().pointLocation(mouse);
                         
@@ -155,22 +154,53 @@
                         info.secondCoordinate[1] = coord.lat;
                     }
                     updateVertex(info);
+                    function lineLength(line) {
+                        var dx = line.getAttribute('x1') - line.getAttribute('x2'),
+                            dy = line.getAttribute('y1') - line.getAttribute('y2');
+                        return Math.sqrt(dx*dx + dy*dy);
+                    }
+                    if (((info.prevLine && lineLength(info.prevLine) < 4) ||
+                        (info.nextLine && lineLength(info.nextLine) < 4)) &&
+                        geom.coordinates.length > 4)
+                    {
+                        info.marker.setAttribute('fill', "red");
+                        info.remove = true;
+                    } else {
+                        info.marker.setAttribute('fill', "yellow");
+                        delete info.remove;
+                    }
                     e.preventDefault();
                     e.stopPropagation();
                 }, false);
                 window.addEventListener('mouseup', function (e) {
                     if (!editingVertex) return;
                     
-                    var info = editingVertex;
-                    info.marker.setAttribute('fill', '');
-                    editingVertex = null;
+                    if (editingVertex.remove) {
+                        var vertexIndex = vertexInfo.indexOf(editingVertex),
+                            prevVertex = vertexInfo[vertexIndex - 1] || vertexInfo[vertexInfo.length - 1],
+                            nextVertex = vertexInfo[vertexIndex + 1] || vertexInfo[0];
+                        vertexInfo.splice(vertexIndex, 1);
+                        geom.coordinates.splice(vertexIndex, 1);
+                        tile.element.removeChild(editingVertex.marker);
+                        tile.element.removeChild(editingVertex.nextLine);
+                        if (editingVertex.secondCoordinate) {   // was first vertex, need to recreate last in geom.coordinates
+                            geom.coordinates.pop();
+                            geom.coordinates.push(geom.coordinates[0].concat());
+                        }
+                        
+                        nextVertex.prevLine = prevVertex.nextLine;
+                        updateVertex(prevVertex);
+                        updateVertex(nextVertex);
+                    } else {
+                        var info = editingVertex;
+                        info.marker.setAttribute('fill', '');
+                        editingVertex = null;
+                    }
                     e.preventDefault();
                     e.stopPropagation();
                     
                     editor.reload();       // other zoom levels may have old version cached :-(
                 }, false);
-                
-                console.log("Loaded tile: ", tile.zoom, tile.row, tile.column);
             }
             
             return editor;
@@ -205,7 +235,10 @@
             shape.coordinates.push([center.lon - size, center.lat - size]);
             shape.coordinates.push([center.lon - size, center.lat + size]);
             
+            //shape = {"type":"LineString","coordinates":[[-119.3735658945253,46.29581048685796],[-119.3706476511171,46.29088807927684],[-119.36309455053116,46.2969965430172],[-119.3636953653505,46.28928671878893],[-119.35897467748428,46.29675933384047],[-119.35974715368057,46.28786324793944],[-119.35210822240616,46.29474301435047],[-119.3559706033876,46.287032872860465],[-119.34738753453995,46.2913625474672],[-119.34507010595108,46.2836519300825],[-119.35365317479874,46.27665212227163],[-119.35880301610733,46.28519414038968],[-119.36506865636612,46.27843181920295],[-119.36824439183975,46.28685493370588],[-119.37365172521378,46.279677572662735],[-119.37579749242569,46.288397053843056],[-119.38180564061905,46.28382987964139],[-119.38120482579971,46.29391274356988],[-119.37682746068741,46.29124393080497],[-119.3735658945253,46.29581048685796]]};
+            
             map.add(po_editor(shape));
+            gShape = shape;
             return;
             
             var vector = po.geoJson();
