@@ -112,7 +112,7 @@
                         var mouse = editor.map().mouse(e),
                             coord = editor.map().pointLocation(mouse);
                         
-                        var newInfo = createVertex([coord.lon, coord.lat]);
+                        var newInfo = createVertex([coord.lon, coord.lat]);     // NOTE: newInfo.nextLine missing handlers, added on mouseup's reload()
                         newInfo.prevLine = info.nextLine;
                         tile.element.appendChild(newInfo.nextLine);
                         tile.element.appendChild(newInfo.marker);
