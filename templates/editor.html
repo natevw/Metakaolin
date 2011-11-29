@@ -141,6 +141,7 @@
                     }, false);
                 });
                 
+                // TODO: these event handlers pile up every time layer is reloaded!
                 window.addEventListener('mousemove', function (e) {
                     if (!editingVertex) return;
                     
@@ -175,27 +176,28 @@
                 window.addEventListener('mouseup', function (e) {
                     if (!editingVertex) return;
                     
-                    if (editingVertex.remove) {
-                        var vertexIndex = vertexInfo.indexOf(editingVertex),
+                    var info = editingVertex;
+                    if (info.remove) {
+                        var vertexIndex = vertexInfo.indexOf(info),
                             prevVertex = vertexInfo[vertexIndex - 1] || vertexInfo[vertexInfo.length - 1],
                             nextVertex = vertexInfo[vertexIndex + 1] || vertexInfo[0];
                         vertexInfo.splice(vertexIndex, 1);
                         geom.coordinates.splice(vertexIndex, 1);
-                        tile.element.removeChild(editingVertex.marker);
-                        tile.element.removeChild(editingVertex.nextLine);
-                        if (editingVertex.secondCoordinate) {   // was first vertex, need to recreate last in geom.coordinates
+                        tile.element.removeChild(info.marker);
+                        tile.element.removeChild(info.nextLine);
+                        if (info.secondCoordinate) {   // was first vertex, need to recreate last in geom.coordinates
                             geom.coordinates.pop();
                             geom.coordinates.push(geom.coordinates[0].concat());
+                            vertexInfo[0].secondCoordinate = geom.coordinates[geom.coordinates.length - 1];
                         }
                         
                         nextVertex.prevLine = prevVertex.nextLine;
                         updateVertex(prevVertex);
                         updateVertex(nextVertex);
                     } else {
-                        var info = editingVertex;
                         info.marker.setAttribute('fill', '');
-                        editingVertex = null;
                     }
+                    editingVertex = null;
                     e.preventDefault();
                     e.stopPropagation();
                     
