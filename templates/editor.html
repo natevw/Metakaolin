@@ -39,7 +39,19 @@
                 tile.element = po.svg('g');
                 
                 var proj = tileProj(tile);
-                function update(vertex) {
+                function createVertex(originalCoordinate) {
+                    var info = {
+                        originalCoordinate: originalCoordinate,
+                        marker: po.svg('circle'),
+                        nextLine: po.svg('line'),
+                        prevLine: prevLine
+                    };
+                    info.marker.setAttribute('r', 5);
+                    info.nextLine.setAttribute('stroke', "grey");
+                    info.nextLine.setAttribute('stroke-width', 2.5);
+                    return info;
+                }
+                function updateVertex(vertex) {
                     var coord = vertex.originalCoordinate,
                         pt = proj.locationPoint({lat:coord[1], lon:coord[0]});
                     vertex.marker.setAttribute('cx', pt.x);
@@ -56,14 +68,8 @@
                 
                 var prevLine = null,
                     vertexInfo = geom.coordinates.map(function (c) {
-                        var info = {
-                            originalCoordinate: c,
-                            marker: po.svg('circle'),
-                            nextLine: po.svg('line'),
-                            prevLine: prevLine
-                        };
-                        info.marker.setAttribute('r', 5);
-                        info.nextLine.setAttribute('stroke', "grey");
+                        var info = createVertex(c);
+                        info.prevLine = prevLine;
                         prevLine = info.nextLine;
                         return info;
                     });
@@ -71,22 +77,65 @@
                 vertexInfo[0].secondCoordinate = lastInfo.originalCoordinate;
                 vertexInfo[0].prevLine = lastInfo.prevLine;      // hook last line to first vertex
                 
-                vertexInfo.forEach(function (info) {
-                    update(info);
+                var editingVertex = null;
+                vertexInfo.forEach(function (info, index) {
+                    updateVertex(info);
                     tile.element.appendChild(info.nextLine);
+                    
+                    var newVertex = po.svg('circle');
+                    newVertex.setAttribute('r', 5);
+                    newVertex.setAttribute('fill', "none");
+                    newVertex.setAttribute('stroke', "black");
+                    
+                    info.nextLine.addEventListener('mouseover', function (e) {
+                        tile.element.appendChild(newVertex);
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                    info.nextLine.addEventListener('mousemove', function (e) {
+                        var mouse = editor.map().mouse(e),
+                            coord = editor.map().pointLocation(mouse),
+                            point = proj.locationPoint(coord);
+                        newVertex.setAttribute('cx', point.x);
+                        newVertex.setAttribute('cy', point.y);
+                        
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                    info.nextLine.addEventListener('mouseout', function (e) {
+                        tile.element.removeChild(newVertex);
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                    info.nextLine.addEventListener('mousedown', function (e) {
+                        console.log("ENTER THE VORTEX!!!!!");
+                        
+                        var mouse = editor.map().mouse(e),
+                            coord = editor.map().pointLocation(mouse);
+                        
+                        var newInfo = createVertex([coord.lon, coord.lat]);
+                        newInfo.prevLine = info.nextLine;
+                        tile.element.appendChild(newInfo.nextLine);
+                        tile.element.appendChild(newInfo.marker);
+                        
+                        var insertIndex = index + 1,
+                            nextInfo = vertexInfo[insertIndex] || vertexInfo[0];
+                        nextInfo.prevLine = newInfo.nextLine;
+                        updateVertex(nextInfo);
+                        vertexInfo.splice(insertIndex, 0, newInfo);
+                        geom.coordinates.splice(insertIndex, 0, newInfo.originalCoordinate);
+                        updateVertex(newInfo);
+                        
+                        newInfo.marker.setAttribute('fill', "yellow");
+                        editingVertex = newInfo;
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
                 });
-                
-                var editingVertex = null,
-                    mouseListener = po.svg('rect');
-                mouseListener.setAttribute('width', 100);
-                mouseListener.setAttribute('height', 100);
-                tile.element.appendChild(mouseListener);
-                
                 vertexInfo.forEach(function (info) {
                     tile.element.appendChild(info.marker);
                     info.marker.addEventListener('mousedown', function (e) {
                         info.marker.setAttribute('fill', "yellow");
-                        tile.element.setAttribute('pointer-events', "all");
                         editingVertex = info;
                         e.preventDefault();
                         e.stopPropagation();
@@ -105,7 +154,7 @@
                         info.secondCoordinate[0] = coord.lon;
                         info.secondCoordinate[1] = coord.lat;
                     }
-                    update(info);
+                    updateVertex(info);
                     e.preventDefault();
                     e.stopPropagation();
                 }, false);
@@ -114,7 +163,6 @@
                     
                     var info = editingVertex;
                     info.marker.setAttribute('fill', '');
-                    tile.element.setAttribute('pointer-events', '');
                     editingVertex = null;
                     e.preventDefault();
                     e.stopPropagation();
