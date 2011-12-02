@@ -152,13 +152,15 @@
                         n.ui = {};
                         n.ui.el = po.svg('circle');
                         n.ui.el.setAttribute('r', 5);
+                        n.ui.el['data-node_id'] = n.id;
                     }
                     if (n.ui.el.parentNode !== nodesLayer) {
-                        n.ui.el.removeEventListener('mousedown', n.ui.mouseListener, false);
-                        n.ui.el.addEventListener('mousedown', n.ui.mouseListener = function (e) {
+                        n.ui.el.removeEventListener('mousedown', n.ui.mousedownListener, false);
+                        n.ui.el.addEventListener('mousedown', n.ui.mousedownListener = function (e) {
                             _stopEvent(e);
                             setupCapture();
                         }, false);
+                        
                         nodesLayer.appendChild(n.ui.el);
                     }
                     function setupCapture() {
@@ -172,11 +174,54 @@
                                 Object.keys(n.connectedTo).forEach(function (cid) {
                                     setupConnectionUI(n.connectedTo[cid], n);
                                 });
+                                
+                                // cheatly hit testing, HT http://stackoverflow.com/questions/2174640/hit-testing-svg-shapes
+                                n.ui.el.style.setProperty('display', "none");
+                                var targetNode, targetEl = document.elementFromPoint(e.pageX, e.pageY);
+                                if (targetEl.parentNode === nodesLayer) {
+                                    var nid = targetEl['data-node_id'];
+                                    targetNode = nodeObjects[nid];
+                                }
+                                n.ui.el.style.removeProperty('display');
+                                
+                                var MAX_CONNECTIONS = 2;    // prevent full-fledged node networks from springing up
+                                if (targetNode && !targetNode.connectedTo[n.id] &&
+                                    (Object.keys(targetNode.connectedTo).length >= MAX_CONNECTIONS ||
+                                    Object.keys(n.connectedTo).length >= MAX_CONNECTIONS))
+                                {
+                                    targetNode = void 0;
+                                }
+                                if (n.ui.targetNode && targetNode !== n.ui.targetNode) {
+                                    n.ui.targetNode.ui.el.setAttribute('fill', '');
+                                }
+                                if (targetNode) {
+                                    n.ui.targetNode = targetNode;
+                                    n.ui.targetNode.ui.el.setAttribute('fill', "yellow");
+                                } else {
+                                    delete n.ui.targetNode;
+                                }
                             },
                             up: function (e) {
                                 _stopEvent(e);
                                 n.ui.el.setAttribute('fill', '');
                                 uncapture('mouse');
+                                
+                                if (n.ui.targetNode) {          // remove after merging unique connections to target node
+                                    var tn = n.ui.targetNode;
+                                    tn.ui.el.setAttribute('fill', '');
+                                    Object.keys(n.connectedTo).forEach(function (cid) {
+                                        var c = n.connectedTo[cid],
+                                            cn = nodeObjects[cid];
+                                        removeConnectionUI(c);
+                                        disconnectNodes(cn, n);
+                                        if (cn !== tn && !tn.connectedTo[cid]) {
+                                            var nc = connectNodes(cn, tn);
+                                            setupConnectionUI(nc, tn), setupConnectionUI(nc, cn);
+                                        }
+                                    });
+                                    removeNodeUI(n);
+                                    destroyNode(n);
+                                }
                             }
                         });
                     }
@@ -324,7 +369,7 @@
             shape.coordinates[0].push([center.lon + size, center.lat - size]);
             shape.coordinates[0].push([center.lon - size, center.lat - size]);
             shape.coordinates[0].push([center.lon - size, center.lat + size]);
-            if (0) {
+            if (1) {
                 shape.type = (1) ? "LineString" : "MultiPoint";
                 shape.coordinates = shape.coordinates[0];
                 shape.coordinates.pop();
