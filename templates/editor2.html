@@ -152,7 +152,7 @@
                         n.ui = {};
                         n.ui.el = po.svg('circle');
                         n.ui.el.setAttribute('r', 5);
-                        n.ui.el['data-node_id'] = n.id;
+                        n.ui.el._graph_node = n;
                     }
                     if (n.ui.el.parentNode !== nodesLayer) {
                         n.ui.el.removeEventListener('mousedown', n.ui.mousedownListener, false);
@@ -177,10 +177,11 @@
                                 
                                 // cheatly hit testing, HT http://stackoverflow.com/questions/2174640/hit-testing-svg-shapes
                                 n.ui.el.style.setProperty('display', "none");
-                                var targetNode, targetEl = document.elementFromPoint(e.pageX, e.pageY);
+                                var targetNode, targetConnection, targetEl = document.elementFromPoint(e.pageX, e.pageY);
                                 if (targetEl.parentNode === nodesLayer) {
-                                    var nid = targetEl['data-node_id'];
-                                    targetNode = nodeObjects[nid];
+                                    targetNode = targetEl._graph_node;
+                                } else if (targetEl.parentNode === connectionsLayer) {
+                                    targetConnection = targetEl._graph_connecion;
                                 }
                                 n.ui.el.style.removeProperty('display');
                                 
@@ -203,6 +204,8 @@
                                 } else {
                                     delete n.ui.targetNode;
                                 }
+                                
+                                // TODO: prepare targetConnection to be broken if adjacent
                             },
                             up: function (e) {
                                 _stopEvent(e);
@@ -243,6 +246,7 @@
                         c.ui.el = po.svg('line');
                         c.ui.el.setAttribute('stroke', "grey");
                         c.ui.el.setAttribute('stroke-width', 5);
+                        c.ui.el._graph_connecion = c;
                         
                         c.ui.newVertex = po.svg('circle');
                         c.ui.newVertex.setAttribute('r', 5);
