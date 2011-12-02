@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Metakaolin — Edit "{{ title }}"</title>
+    <!--
+    <script src="{{app_url}}/d3.min.js"></script>
+    <script src="{{app_url}}/fermata.min.js"></script>
+    <script src="{{app_url}}/polymaps.min.js"></script>
+    -->
+    
+    <!-- temporary: allow quicker local development -->
+    <script src="../_attachments/d3.min.js"></script>
+    <script src="../_attachments/fermata.min.js"></script>
+    <script src="../_attachments/polymaps.min.js"></script>
+    <!-- /temporary -->
+    
+    <style>
+        #map { position: absolute; top: 3em; bottom: 1em; left: 0; right: 0; padding: 0; margin: 0; }
+    </style>
+</head>
+<body>
+    <form action="{{app_url}}/_update/content/{{id}}" method="POST">
+        <a href="{{app_url}}/_list/summary/by_moddate">←</a>
+        <!--<a href="{{app_url}}/_show/viewer/{{id}}">Cancel</a>-->
+        <a href="{{app_url}}/_show/files/{{id}}">Files...</a>
+        <input name="title" placeholder="Document title" size="140" value="{{ title }}"></input>
+        <button>Save</button>
+        <!--<textarea id="geojson_content" name="content" hidden>{{ content }}</textarea>-->
+        <textarea id="geojson_content" name="content" hidden></textarea>    
+    <form>
+    <div id="map"></div>
+    
+    <script>
+        var po_editor = function () {
+            var editor = po.layer(load);
+            function load(tile, tileProj) {
+                tile.element = po.svg('g');
+            }
+            
+            // dumpGeometry, loadGeometry convert between GeoJSON and internal linked vertices representation
+            // on mouse/touch down, an object "captures" that input and window move/up listeners dispatch to its handlers
+            
+            // three core interactions: "extend" a point (/refine a segment), "break" a connection, "merge" two points
+            
+            // to add a new point, tap an existing one and pull its extension onto the map
+            // to unlink segments, tap a point or segment and 
+            // to delete a point, drop it onto another — this combines their connections as well and can be used to link segments together
+            
+            var nodeObjects, nodeTicket;
+            function resetNodes() {
+                nodeObjects = {};
+                nodeTicket = 0;
+            }
+            
+            function createNode(pt) {
+                nodeTicket += 1;
+                var n = {id:nodeTicket, position:pt, connectedTo:{}};
+                nodeObjects[n.id] = n;
+                return n;
+            }
+            function destroyNode(n) {
+                Object.keys(n.connectedTo).forEach(function (id) {
+                    disconnectNodes(n, nodeObjects[id]);
+                });
+                delete nodeObjects[n.id];
+            }
+            
+            function connectNodes(a, b) {
+                var c = {};
+                a.connectedTo[b.id] = c;
+                b.connectedTo[a.id] = c;
+                return c;
+            }
+            function disconnectNodes(a, b) {
+                delete a.connectedTo[b.id];
+                delete b.connectedTo[a.id];
+            }
+            
+            
+            function loadGeometry(geom) {
+                var LOAD = {
+                    "Point": function (pt) {
+                        createNode(pt);
+                    },
+                    "LineString": function (a) {
+                        var prevNode;
+                        a.forEach(function (pt) {
+                            var n = createNode(pt);
+                            if (prevNode) {
+                                connectNodes(prevNode, n);
+                            }
+                            prevNode = n;
+                        });
+                    },
+                    "Polygon": function (a) {
+                        var firstNode, prevNode;
+                        a.forEach(function (pt) {
+                            var n = createNode(pt);
+                            if (prevNode) {
+                                connectNodes(prevNode, n);
+                            } else {
+                                firstNode = n;
+                            }
+                            prevNode = n;
+                        });                    
+                        connectNodes(firstNode, prevNode);
+                    }
+                };
+                
+                if (LOAD[geom.type]) {
+                    LOAD[geom.type](geom.coordinates);
+                } else if (geom.type.indexOf("Multi") === 0) {
+                    geom.coordinates.forEach(LOAD[geom.type].slice("Multi".length));
+                } else if (geom.type == "GeometryCollection") {
+                    geom.geometries.forEach(loadGeometry);
+                } else {
+                    throw Error("Unknown geometry type: " + geom.type);
+                }
+            }
+            
+            editor.geometry = function (geom) {
+                if (!arguments.length) {
+                    return dumpGeometry();
+                }
+                resetNodes();
+                loadGeometry(geom);
+                return editor;
+            }
+            
+            return editor;
+        };
+    </script>
+    <script>
+        var po = org.polymaps,
+            map = po.map().container(d3.select('#map').append("svg:svg").node());
+        map.add(po.interact());
+        map.add(po.image()
+            .url(po.url("http://{S}tile.cloudmade.com"
+            + "/51664f123b50414da85e963f92c721f0"
+            + "/998/256/{Z}/{X}/{Y}.png")
+            .hosts(["a.", "b.", "c.", ""])));
+        
+        var geojson_content = d3.select("#geojson_content").node();
+        if (geojson_content.value) {
+            // TODO: draw, zoom to existing data
+        } else if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
+            map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
+            addEditablePoint();
+        });
+        
+        function addEditablePoint () {
+            var shape = {type:"Polygon", coordinates:[[]]},
+                size = 0.00125,
+                center = map.center();
+            shape.coordinates[0].push([center.lon - size, center.lat + size]);
+            shape.coordinates[0].push([center.lon + size, center.lat + size]);
+            shape.coordinates[0].push([center.lon + size, center.lat - size]);
+            shape.coordinates[0].push([center.lon - size, center.lat - size]);
+            shape.coordinates[0].push([center.lon - size, center.lat + size]);
+            
+            var editor = po_editor();
+            editor.geometry(shape);
+            map.add(editor);
+        }
+    </script>
+</body>
+</html>
