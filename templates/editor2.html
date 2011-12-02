@@ -185,11 +185,14 @@
                                 n.ui.el.style.removeProperty('display');
                                 
                                 var MAX_CONNECTIONS = 2;    // prevent full-fledged node networks from springing up
-                                if (targetNode && !targetNode.connectedTo[n.id] &&
-                                    (Object.keys(targetNode.connectedTo).length >= MAX_CONNECTIONS ||
-                                    Object.keys(n.connectedTo).length >= MAX_CONNECTIONS))
-                                {
-                                    targetNode = void 0;
+                                if (targetNode) {
+                                    var combinedConnections = {};
+                                    Object.keys(targetNode.connectedTo).forEach(function (cid) { combinedConnections[cid] = true; });
+                                    Object.keys(n.connectedTo).forEach(function (cid) { combinedConnections[cid] = true; });
+                                    delete combinedConnections[n.id], delete combinedConnections[targetNode.id];
+                                    if (Object.keys(combinedConnections).length > MAX_CONNECTIONS) {
+                                        targetNode = void 0;
+                                    }
                                 }
                                 if (n.ui.targetNode && targetNode !== n.ui.targetNode) {
                                     n.ui.targetNode.ui.el.setAttribute('fill', '');
