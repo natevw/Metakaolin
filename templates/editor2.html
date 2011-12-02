@@ -100,7 +100,7 @@
                     "Polygon": function (a) {
                         a.forEach(function (ring) {
                             var firstNode, prevNode;
-                            ring.forEach(function (pt) {
+                            ring.slice(0,-1).forEach(function (pt) {
                                 var n = createNode(pt);
                                 if (prevNode) {
                                     connectNodes(prevNode, n);
@@ -135,6 +135,7 @@
             // to add a new point, tap an existing one and pull its extension onto the map
             // to unlink segments, tap a point or segment and 
             // to delete a point, drop it onto another — this combines their connections as well and can be used to link segments together
+            function _stopEvent(e) { e.preventDefault(); e.stopPropagation(); }
             
             function load(tile, tileProj) {
                 tile.element = po.svg('g');
@@ -151,6 +152,28 @@
                         n.ui = {};
                         n.ui.el = po.svg('circle');
                         n.ui.el.setAttribute('r', 5);
+                        
+                        n.ui.el.addEventListener('mousedown', function (e) {
+                            _stopEvent(e);
+                            n.ui.el.setAttribute('fill', "yellow");
+                            capture('mouse', {
+                                move: function (e) {
+                                    _stopEvent(e);
+                                    var input = editor.map().mouse(e),
+                                        coord = editor.map().pointLocation(input);
+                                    n.position[0] = coord.lon, n.position[1] = coord.lat;
+                                    _setPosition(n.ui.el, 'c_', n.position);
+                                    Object.keys(n.connectedTo).forEach(function (cid) {
+                                        setupConnectionUI(n.connectedTo[cid], n);
+                                    });
+                                },
+                                up: function (e) {
+                                    _stopEvent(e);
+                                    n.ui.el.setAttribute('fill', '');
+                                    uncapture('mouse');
+                                }
+                            });
+                        }, false);
                     }
                     if (n.ui.el.parentNode !== nodesLayer) nodesLayer.appendChild(n.ui.el);
                     _setPosition(n.ui.el, 'c_', n.position);
@@ -200,8 +223,25 @@
             // on mouse/touch down, an object can "capture" that input and these window move/up listeners will dispatch to its handlers
             
             var inputOwners = {};
-            window.addEventListener('mousemove', function (e) {});
-            window.addEventListener('mouseup', function (e) {});
+            function capture(source, events) {
+                inputOwners[source] = events;
+            }
+            function uncapture(source) {
+                delete inputOwners[source];
+            }
+            
+            window.addEventListener('mousemove', function (e) {
+                var owner = inputOwners['mouse'];
+                if (owner && owner.move) {
+                    return owner.move(e);
+                };
+            }, false);
+            window.addEventListener('mouseup', function (e) {
+                var owner = inputOwners['mouse'];
+                if (owner && owner.up) {
+                    return owner.up(e);
+                };
+            }, false);
             
             
             return editor;
