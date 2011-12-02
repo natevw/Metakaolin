@@ -152,8 +152,10 @@
                         n.ui = {};
                         n.ui.el = po.svg('circle');
                         n.ui.el.setAttribute('r', 5);
-                        
-                        n.ui.el.addEventListener('mousedown', function (e) {
+                    }
+                    if (n.ui.el.parentNode !== nodesLayer) {
+                        n.ui.el.removeEventListener('mousedown', n.ui.mouseListener, false);
+                        n.ui.el.addEventListener('mousedown', n.ui.mouseListener = function (e) {
                             _stopEvent(e);
                             n.ui.el.setAttribute('fill', "yellow");
                             capture('mouse', {
@@ -174,8 +176,8 @@
                                 }
                             });
                         }, false);
+                        nodesLayer.appendChild(n.ui.el);
                     }
-                    if (n.ui.el.parentNode !== nodesLayer) nodesLayer.appendChild(n.ui.el);
                     _setPosition(n.ui.el, 'c_', n.position);
                 }
                 function removeNodeUI(n) {
