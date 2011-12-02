@@ -147,7 +147,7 @@
                 tile.element.appendChild(nodesLayer);
                 tile.element.appendChild(chromeLayer);
                 
-                function setupNodeUI(n) {
+                function setupNodeUI(n, precaptured) {
                     if (!n.ui) {
                         n.ui = {};
                         n.ui.el = po.svg('circle');
@@ -157,27 +157,31 @@
                         n.ui.el.removeEventListener('mousedown', n.ui.mouseListener, false);
                         n.ui.el.addEventListener('mousedown', n.ui.mouseListener = function (e) {
                             _stopEvent(e);
-                            n.ui.el.setAttribute('fill', "yellow");
-                            capture('mouse', {
-                                move: function (e) {
-                                    _stopEvent(e);
-                                    var input = editor.map().mouse(e),
-                                        coord = editor.map().pointLocation(input);
-                                    n.position[0] = coord.lon, n.position[1] = coord.lat;
-                                    _setPosition(n.ui.el, 'c_', n.position);
-                                    Object.keys(n.connectedTo).forEach(function (cid) {
-                                        setupConnectionUI(n.connectedTo[cid], n);
-                                    });
-                                },
-                                up: function (e) {
-                                    _stopEvent(e);
-                                    n.ui.el.setAttribute('fill', '');
-                                    uncapture('mouse');
-                                }
-                            });
+                            setupCapture();
                         }, false);
                         nodesLayer.appendChild(n.ui.el);
                     }
+                    function setupCapture() {
+                        n.ui.el.setAttribute('fill', "yellow");
+                        capture('mouse', {
+                            move: function (e) {
+                                _stopEvent(e);
+                                var coord = _getLocation(e);
+                                n.position[0] = coord.lon, n.position[1] = coord.lat;
+                                _setPosition(n.ui.el, 'c_', n.position);
+                                Object.keys(n.connectedTo).forEach(function (cid) {
+                                    setupConnectionUI(n.connectedTo[cid], n);
+                                });
+                            },
+                            up: function (e) {
+                                _stopEvent(e);
+                                n.ui.el.setAttribute('fill', '');
+                                uncapture('mouse');
+                            }
+                        });
+                    }
+                    if (precaptured) setupCapture();
+                    
                     _setPosition(n.ui.el, 'c_', n.position);
                 }
                 function removeNodeUI(n) {
@@ -191,14 +195,54 @@
                         c.ui.el = po.svg('line');
                         c.ui.el.setAttribute('stroke', "grey");
                         c.ui.el.setAttribute('stroke-width', 5);
+                        
+                        c.ui.newVertex = po.svg('circle');
+                        c.ui.newVertex.setAttribute('r', 5);
+                        c.ui.newVertex.setAttribute('fill', "none");
+                        c.ui.newVertex.setAttribute('stroke', "black");
                     }
-                    if (c.ui.el.parentNode !== connectionsLayer) connectionsLayer.appendChild(c.ui.el);
+                    if (c.ui.el.parentNode !== connectionsLayer) {
+                        c.ui.el.removeEventListener('mouseover', c.ui.mouseoverListener, false);
+                        c.ui.el.addEventListener('mouseover', c.ui.mouseoverListener = function (e) {
+                            _stopEvent(e);
+                            chromeLayer.appendChild(c.ui.newVertex);
+                        }, false);
+                        c.ui.el.removeEventListener('mousemove', c.ui.mousemoveListener, false);
+                        c.ui.el.addEventListener('mousemove', c.ui.mousemoveListener = function (e) {
+                            _stopEvent(e);
+                            var coord = _getLocation(e);
+                            _setPosition(c.ui.newVertex, 'c_', [coord.lon, coord.lat]);
+                        }, false);
+                        c.ui.el.removeEventListener('mouseout', c.ui.mouseoutListener, false);
+                        c.ui.el.addEventListener('mouseout', c.ui.mouseoutListener = function (e) {
+                            _stopEvent(e);
+                            chromeLayer.removeChild(c.ui.newVertex);
+                        }, false);
+                        c.ui.el.removeEventListener('mousedown', c.ui.mousedownListener, false);
+                        c.ui.el.addEventListener('mousedown', c.ui.mousedownListener = function (e) {
+                            _stopEvent(e);
+                            var coord = _getLocation(e);
+                            disconnectNodes(c.ui.n1, c.ui.n2);
+                            var nn = createNode([coord.lon, coord.lat]),
+                                c1 = connectNodes(c.ui.n1, nn),
+                                c2 = connectNodes(c.ui.n2, nn);
+                            setupConnectionUI(c1, nn), setupConnectionUI(c1, c.ui.n1);
+                            setupConnectionUI(c2, nn), setupConnectionUI(c2, c.ui.n2);
+                            setupNodeUI(nn, 'precaptured');
+                            removeConnectionUI(c);
+                        }, false);
+                        connectionsLayer.appendChild(c.ui.el);
+                    }
                     
                     var nN = (c.ui.n1 && c.ui.n1 !== n) ? 2 : 1;
                     c.ui['n'+nN] = n;   // freshen storage of which node owns which end
                     _setPosition(c.ui.el, '_'+nN, n.position);
                 }
                 function removeConnectionUI(c) {
+                    if (c.ui.newVertex.parentNode) {
+                        c.ui.el.removeEventListener('mouseout', c.ui.mouseoutListener, false);
+                        chromeLayer.removeChild(c.ui.newVertex);
+                    }
                     connectionsLayer.removeChild(c.ui.el);
                     delete c.ui;
                 }
@@ -209,6 +253,10 @@
                     el.setAttribute(attr.replace('_','x'), pt.x);
                     el.setAttribute(attr.replace('_','y'), pt.y);
                     return pt;
+                }
+                function _getLocation(e) {
+                    var mouse = editor.map().mouse(e);
+                    return editor.map().pointLocation(mouse);
                 }
                 
                 Object.keys(nodeObjects).forEach(function (id) {
