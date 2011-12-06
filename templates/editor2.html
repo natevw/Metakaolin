@@ -204,8 +204,6 @@
                                 } else {
                                     delete n.ui.targetNode;
                                 }
-                                
-                                // TODO: prepare targetConnection to be broken if adjacent
                             },
                             up: function (e) {
                                 _stopEvent(e);
@@ -262,8 +260,12 @@
                         c.ui.el.removeEventListener('mousemove', c.ui.mousemoveListener, false);
                         c.ui.el.addEventListener('mousemove', c.ui.mousemoveListener = function (e) {
                             _stopEvent(e);
-                            var coord = _getLocation(e);
-                            _setPosition(c.ui.newVertex, 'c_', [coord.lon, coord.lat]);
+                            var coord = _getLocation(e),
+                                pos = [coord.lon, coord.lat];
+                            _setPosition(c.ui.newVertex, 'c_', pos);
+                            if (_dist(c.ui.n1.position, pos) > 10 &&
+                                _dist(c.ui.n2.position, pos) > 10) c.ui.newVertex.setAttribute('stroke', "black");
+                            else c.ui.newVertex.setAttribute('stroke', "red");
                         }, false);
                         c.ui.el.removeEventListener('mouseout', c.ui.mouseoutListener, false);
                         c.ui.el.addEventListener('mouseout', c.ui.mouseoutListener = function (e) {
@@ -276,10 +278,10 @@
                             var coord = _getLocation(e);
                             disconnectNodes(c.ui.n1, c.ui.n2);
                             var nn = createNode([coord.lon, coord.lat]),
-                                c1 = connectNodes(c.ui.n1, nn),
-                                c2 = connectNodes(c.ui.n2, nn);
-                            setupConnectionUI(c1, nn), setupConnectionUI(c1, c.ui.n1);
-                            setupConnectionUI(c2, nn), setupConnectionUI(c2, c.ui.n2);
+                                c1 = (_dist(c.ui.n1.position, nn.position) > 10) ? connectNodes(c.ui.n1, nn) : null,
+                                c2 = (_dist(c.ui.n2.position, nn.position) > 10) ? connectNodes(c.ui.n2, nn) : null;
+                            if (c1) setupConnectionUI(c1, nn), setupConnectionUI(c1, c.ui.n1);
+                            if (c2) setupConnectionUI(c2, nn), setupConnectionUI(c2, c.ui.n2);
                             setupNodeUI(nn, 'precaptured');
                             removeConnectionUI(c);
                         }, false);
@@ -309,6 +311,12 @@
                 function _getLocation(e) {
                     var mouse = editor.map().mouse(e);
                     return editor.map().pointLocation(mouse);
+                }
+                function _dist(pos1, pos2) {
+                    var pt1 = proj({lat:pos1[1], lon:pos1[0]}),
+                        pt2 = proj({lat:pos2[1], lon:pos2[0]}),
+                        dx = pt2.x - pt1.x, dy = pt2.y - pt1.y;
+                    return Math.sqrt(dx*dx + dy*dy);
                 }
                 
                 Object.keys(nodeObjects).forEach(function (id) {
