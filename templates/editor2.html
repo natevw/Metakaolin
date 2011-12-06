@@ -152,13 +152,22 @@
                         n.ui = {};
                         n.ui.el = po.svg('circle');
                         n.ui.el.setAttribute('r', 5);
+                        n.ui.el.setAttribute('stroke-width', 2);
                         n.ui.el._graph_node = n;
                     }
                     if (n.ui.el.parentNode !== nodesLayer) {
                         n.ui.el.removeEventListener('mousedown', n.ui.mousedownListener, false);
                         n.ui.el.addEventListener('mousedown', n.ui.mousedownListener = function (e) {
                             _stopEvent(e);
-                            setupCapture();
+                            if (n.ui.createNew) {
+                                var MAX_CONNECTIONS = 2;
+                                var coord = _getLocation(e);
+                                var nn = createNode([coord.lon, coord.lat]),
+                                    nc = (Object.keys(n.connectedTo).length < MAX_CONNECTIONS) ? connectNodes(n, nn) : null;
+                                if (nc) setupConnectionUI(nc, nn), setupConnectionUI(nc, n);
+                                setupNodeUI(nn, 'precaptured');
+                                nn.ui.targetNode = n;
+                            } else setupCapture();
                         }, false);
                         
                         nodesLayer.appendChild(n.ui.el);
@@ -225,6 +234,13 @@
                                     });
                                     removeNodeUI(n);
                                     destroyNode(n);
+                                } else {
+                                    n.ui.createNew = true;
+                                    n.ui.el.setAttribute('stroke', "green");
+                                    setTimeout(function () {
+                                        delete n.ui.createNew;
+                                        n.ui.el.removeAttribute('stroke');
+                                    }, 300);
                                 }
                             }
                         });
@@ -249,7 +265,8 @@
                         c.ui.newVertex = po.svg('circle');
                         c.ui.newVertex.setAttribute('r', 5);
                         c.ui.newVertex.setAttribute('fill', "none");
-                        c.ui.newVertex.setAttribute('stroke', "black");
+                        c.ui.newVertex.setAttribute('stroke', "green");
+                        c.ui.newVertex.setAttribute('stroke-width', 2);
                     }
                     if (c.ui.el.parentNode !== connectionsLayer) {
                         c.ui.el.removeEventListener('mouseover', c.ui.mouseoverListener, false);
@@ -264,7 +281,7 @@
                                 pos = [coord.lon, coord.lat];
                             _setPosition(c.ui.newVertex, 'c_', pos);
                             if (_dist(c.ui.n1.position, pos) > 10 &&
-                                _dist(c.ui.n2.position, pos) > 10) c.ui.newVertex.setAttribute('stroke', "black");
+                                _dist(c.ui.n2.position, pos) > 10) c.ui.newVertex.setAttribute('stroke', "green");
                             else c.ui.newVertex.setAttribute('stroke', "red");
                         }, false);
                         c.ui.el.removeEventListener('mouseout', c.ui.mouseoutListener, false);
