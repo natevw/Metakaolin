@@ -33,8 +33,14 @@
     
     <script>
         var po_editor = function () {
-            var editor = po.layer(load);
+            var po = org.polymaps,
+                DOUBLE_CLICK_MSEC = 300,
+                MAX_CONNECTIONS = 2,        // prevent full-fledged node networks from springing up
+                MARKER_RADIUS = 5,
+                HIGHLIGHT_WIDTH = 2,
+                CONNECTION_WIDTH = 5;
             
+            var editor = po.layer(load);
             editor.tile(false);
             editor.cache.size(0);
             resetNodes();
@@ -152,8 +158,8 @@
                     if (!n.ui) {
                         n.ui = {};
                         n.ui.el = po.svg('circle');
-                        n.ui.el.setAttribute('r', 5);
-                        n.ui.el.setAttribute('stroke-width', 2);
+                        n.ui.el.setAttribute('r', MARKER_RADIUS);
+                        n.ui.el.setAttribute('stroke-width', HIGHLIGHT_WIDTH);
                         n.ui.el._graph_node = n;
                     }
                     if (n.ui.el.parentNode !== nodesLayer) {
@@ -161,7 +167,6 @@
                         n.ui.el.addEventListener('mousedown', n.ui.mousedownListener = function (e) {
                             _stopEvent(e);
                             if (n.ui.createNew) {
-                                var MAX_CONNECTIONS = 2;
                                 var coord = _getLocation(e);
                                 var nn = createNode([coord.lon, coord.lat]),
                                     nc = (Object.keys(n.connectedTo).length < MAX_CONNECTIONS) ? connectNodes(n, nn) : null;
@@ -195,7 +200,6 @@
                                 }
                                 n.ui.el.style.removeProperty('display');
                                 
-                                var MAX_CONNECTIONS = 2;    // prevent full-fledged node networks from springing up
                                 if (targetNode) {
                                     var combinedConnections = {};
                                     Object.keys(targetNode.connectedTo).forEach(function (cid) { combinedConnections[cid] = true; });
@@ -241,7 +245,7 @@
                                     setTimeout(function () {
                                         delete n.ui.createNew;
                                         n.ui.el.removeAttribute('stroke');
-                                    }, 300);
+                                    }, DOUBLE_CLICK_MSEC);
                                 }
                             }
                         });
@@ -260,14 +264,14 @@
                         c.ui = {};
                         c.ui.el = po.svg('line');
                         c.ui.el.setAttribute('stroke', "grey");
-                        c.ui.el.setAttribute('stroke-width', 5);
+                        c.ui.el.setAttribute('stroke-width', CONNECTION_WIDTH);
                         c.ui.el._graph_connecion = c;
                         
                         c.ui.newVertex = po.svg('circle');
-                        c.ui.newVertex.setAttribute('r', 5);
+                        c.ui.newVertex.setAttribute('r', MARKER_RADIUS);
                         c.ui.newVertex.setAttribute('fill', "none");
                         c.ui.newVertex.setAttribute('stroke', "green");
-                        c.ui.newVertex.setAttribute('stroke-width', 2);
+                        c.ui.newVertex.setAttribute('stroke-width', HIGHLIGHT_WIDTH);
                     }
                     if (c.ui.el.parentNode !== connectionsLayer) {
                         c.ui.el.removeEventListener('mouseover', c.ui.mouseoverListener, false);
@@ -281,8 +285,8 @@
                             var coord = _getLocation(e),
                                 pos = [coord.lon, coord.lat];
                             _setPosition(c.ui.newVertex, 'c_', pos);
-                            if (_dist(c.ui.n1.position, pos) > 10 &&
-                                _dist(c.ui.n2.position, pos) > 10) c.ui.newVertex.setAttribute('stroke', "green");
+                            if (_dist(c.ui.n1.position, pos) > 2*MARKER_RADIUS &&
+                                _dist(c.ui.n2.position, pos) > 2*MARKER_RADIUS) c.ui.newVertex.setAttribute('stroke', "green");
                             else c.ui.newVertex.setAttribute('stroke', "red");
                         }, false);
                         c.ui.el.removeEventListener('mouseout', c.ui.mouseoutListener, false);
@@ -296,8 +300,8 @@
                             var coord = _getLocation(e);
                             disconnectNodes(c.ui.n1, c.ui.n2);
                             var nn = createNode([coord.lon, coord.lat]),
-                                c1 = (_dist(c.ui.n1.position, nn.position) > 10) ? connectNodes(c.ui.n1, nn) : null,
-                                c2 = (_dist(c.ui.n2.position, nn.position) > 10) ? connectNodes(c.ui.n2, nn) : null;
+                                c1 = (_dist(c.ui.n1.position, nn.position) > 2*MARKER_RADIUS) ? connectNodes(c.ui.n1, nn) : null,
+                                c2 = (_dist(c.ui.n2.position, nn.position) > 2*MARKER_RADIUS) ? connectNodes(c.ui.n2, nn) : null;
                             if (c1) setupConnectionUI(c1, nn), setupConnectionUI(c1, c.ui.n1);
                             if (c2) setupConnectionUI(c2, nn), setupConnectionUI(c2, c.ui.n2);
                             setupNodeUI(nn, 'precaptured');
