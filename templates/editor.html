@@ -3,14 +3,18 @@
 <head>
     <meta charset="utf-8">
     <title>Metakaolin — Edit "{{ title }}"</title>
+    <!-- -->
     <script src="{{app_url}}/d3.min.js"></script>
     <script src="{{app_url}}/fermata.min.js"></script>
     <script src="{{app_url}}/polymaps.min.js"></script>
+    <script src="{{app_url}}/polymaps.editor.js"></script>
+    <!-- -->
     
-    <!-- temporary: allow quicker local development -->
+    <!-- temporary: allow quicker local development
     <script src="../_attachments/d3.min.js"></script>
     <script src="../_attachments/fermata.min.js"></script>
     <script src="../_attachments/polymaps.min.js"></script>
+    <script src="../_attachments/polymaps.editor.js"></script>
     <!-- /temporary -->
     
     <style>
@@ -30,190 +34,6 @@
     <div id="map"></div>
     
     <script>
-        var po_editor = function (geom) {
-            var editor = po.layer(load);
-            
-            
-            // geometry types: Point, LineString, Polygon + multi versions
-            
-            editor.tile(false);
-            
-            var prevMouseMoveListener, prevMouseUpListener;
-            function load(tile, tileProj) {
-                tile.element = po.svg('g');
-                
-                var proj = tileProj(tile);
-                function createVertex(originalCoordinate) {
-                    var info = {
-                        originalCoordinate: originalCoordinate,
-                        marker: po.svg('circle'),
-                        nextLine: po.svg('line'),
-                        prevLine: prevLine
-                    };
-                    info.marker.setAttribute('r', 5);
-                    info.nextLine.setAttribute('stroke', "grey");
-                    info.nextLine.setAttribute('stroke-width', 3);
-                    return info;
-                }
-                function updateVertex(vertex) {
-                    var coord = vertex.originalCoordinate,
-                        pt = proj.locationPoint({lat:coord[1], lon:coord[0]});
-                    vertex.marker.setAttribute('cx', pt.x);
-                    vertex.marker.setAttribute('cy', pt.y);
-                    if (vertex.nextLine) {
-                        vertex.nextLine.setAttribute('x1', pt.x);
-                        vertex.nextLine.setAttribute('y1', pt.y);
-                    }
-                    if (vertex.prevLine) {
-                        vertex.prevLine.setAttribute('x2', pt.x);
-                        vertex.prevLine.setAttribute('y2', pt.y);
-                    }
-                }
-                
-                var prevLine = null,
-                    vertexInfo = geom.coordinates.map(function (c) {
-                        var info = createVertex(c);
-                        info.prevLine = prevLine;
-                        prevLine = info.nextLine;
-                        return info;
-                    });
-                var lastInfo = vertexInfo.pop();       // discard duplicate last point
-                vertexInfo[0].secondCoordinate = lastInfo.originalCoordinate;
-                vertexInfo[0].prevLine = lastInfo.prevLine;      // hook last line to first vertex
-                //vertexInfo[0].marker.setAttribute('fill', "grey");
-                
-                var editingVertex = null;
-                vertexInfo.forEach(function (info, index) {
-                    updateVertex(info);
-                    tile.element.appendChild(info.nextLine);
-                    
-                    var newVertex = po.svg('circle');
-                    newVertex.setAttribute('r', 5);
-                    newVertex.setAttribute('fill', "none");
-                    newVertex.setAttribute('stroke', "black");
-                    
-                    info.nextLine.addEventListener('mouseover', function (e) {
-                        tile.element.appendChild(newVertex);
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }, false);
-                    info.nextLine.addEventListener('mousemove', function (e) {
-                        var mouse = editor.map().mouse(e),
-                            coord = editor.map().pointLocation(mouse),
-                            point = proj.locationPoint(coord);
-                        newVertex.setAttribute('cx', point.x);
-                        newVertex.setAttribute('cy', point.y);
-                        
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }, false);
-                    info.nextLine.addEventListener('mouseout', function (e) {
-                        tile.element.removeChild(newVertex);
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }, false);
-                    info.nextLine.addEventListener('mousedown', function (e) {
-                        var mouse = editor.map().mouse(e),
-                            coord = editor.map().pointLocation(mouse);
-                        
-                        var newInfo = createVertex([coord.lon, coord.lat]);     // NOTE: newInfo.nextLine missing handlers, added on mouseup's reload()
-                        newInfo.prevLine = info.nextLine;
-                        tile.element.appendChild(newInfo.nextLine);
-                        tile.element.appendChild(newInfo.marker);
-                        
-                        var insertIndex = index + 1,
-                            nextInfo = vertexInfo[insertIndex] || vertexInfo[0];
-                        nextInfo.prevLine = newInfo.nextLine;
-                        updateVertex(nextInfo);
-                        vertexInfo.splice(insertIndex, 0, newInfo);
-                        geom.coordinates.splice(insertIndex, 0, newInfo.originalCoordinate);
-                        updateVertex(newInfo);
-                        
-                        newInfo.marker.setAttribute('fill', "yellow");
-                        editingVertex = newInfo;
-                        e.preventDefault();
-                        e.stopPropagation();
-                    });
-                });
-                vertexInfo.forEach(function (info) {
-                    tile.element.appendChild(info.marker);
-                    info.marker.addEventListener('mousedown', function (e) {
-                        info.marker.setAttribute('fill', "yellow");
-                        editingVertex = info;
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }, false);
-                });
-                
-                window.removeEventListener('mousemove', prevMouseMoveListener, false);
-                window.addEventListener('mousemove', prevMouseMoveListener = function (e) {
-                    if (!editingVertex) return;
-                    
-                    var info = editingVertex,
-                        mouse = editor.map().mouse(e),
-                        coord = editor.map().pointLocation(mouse);
-                    info.originalCoordinate[0] = coord.lon;
-                    info.originalCoordinate[1] = coord.lat;
-                    if (info.secondCoordinate) {    // write to duplicate last position
-                        info.secondCoordinate[0] = coord.lon;
-                        info.secondCoordinate[1] = coord.lat;
-                    }
-                    updateVertex(info);
-                    function lineLength(line) {
-                        var dx = line.getAttribute('x1') - line.getAttribute('x2'),
-                            dy = line.getAttribute('y1') - line.getAttribute('y2');
-                        return Math.sqrt(dx*dx + dy*dy);
-                    }
-                    if (((info.prevLine && lineLength(info.prevLine) < 4) ||
-                        (info.nextLine && lineLength(info.nextLine) < 4)) &&
-                        geom.coordinates.length > 4)
-                    {
-                        info.marker.setAttribute('fill', "red");
-                        info.remove = true;
-                    } else {
-                        info.marker.setAttribute('fill', "yellow");
-                        delete info.remove;
-                    }
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, false);
-                window.removeEventListener('mouseup', prevMouseUpListener, false);
-                window.addEventListener('mouseup', prevMouseUpListener = function (e) {
-                    if (!editingVertex) return;
-                    
-                    var info = editingVertex;
-                    if (info.remove) {
-                        var vertexIndex = vertexInfo.indexOf(info),
-                            prevVertex = vertexInfo[vertexIndex - 1] || vertexInfo[vertexInfo.length - 1],
-                            nextVertex = vertexInfo[vertexIndex + 1] || vertexInfo[0];
-                        vertexInfo.splice(vertexIndex, 1);
-                        geom.coordinates.splice(vertexIndex, 1);
-                        tile.element.removeChild(info.marker);
-                        tile.element.removeChild(info.nextLine);
-                        if (info.secondCoordinate) {   // was first vertex, need to recreate last in geom.coordinates
-                            geom.coordinates.pop();
-                            geom.coordinates.push(geom.coordinates[0].concat());
-                            vertexInfo[0].secondCoordinate = geom.coordinates[geom.coordinates.length - 1];
-                        }
-                        
-                        nextVertex.prevLine = prevVertex.nextLine;
-                        updateVertex(prevVertex);
-                        updateVertex(nextVertex);
-                    } else {
-                        info.marker.setAttribute('fill', '');
-                    }
-                    editingVertex = null;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    editor.reload();       // other zoom levels may have old version cached :-(
-                }, false);
-            }
-            
-            return editor;
-        };
-    </script>
-    <script>
         var po = org.polymaps,
             map = po.map().container(d3.select('#map').append("svg:svg").node());
         map.add(po.interact());
@@ -231,35 +51,26 @@
             addEditablePoint();
         });
         
-        // TEMPORARY: start prototyping basic editing with a lowly point
         function addEditablePoint () {
-            var shape = {type:"LineString", coordinates:[]},
+            var shape = {type:"Polygon", coordinates:[[]]},
                 size = 0.00125,
                 center = map.center();
-            shape.coordinates.push([center.lon - size, center.lat + size]);
-            shape.coordinates.push([center.lon + size, center.lat + size]);
-            shape.coordinates.push([center.lon + size, center.lat - size]);
-            shape.coordinates.push([center.lon - size, center.lat - size]);
-            shape.coordinates.push([center.lon - size, center.lat + size]);
+            shape.coordinates[0].push([center.lon - size, center.lat + size]);
+            shape.coordinates[0].push([center.lon + size, center.lat + size]);
+            shape.coordinates[0].push([center.lon + size, center.lat - size]);
+            shape.coordinates[0].push([center.lon - size, center.lat - size]);
+            shape.coordinates[0].push([center.lon - size, center.lat + size]);
+            if (1) {
+                shape.type = (1) ? "LineString" : "MultiPoint";
+                shape.coordinates = shape.coordinates[0];
+                shape.coordinates.pop();
+            } else if (1) {
+                shape = {type:"GeometryCollection", geometries:[shape]};
+            }
             
-            //shape = {"type":"LineString","coordinates":[[-119.3735658945253,46.29581048685796],[-119.3706476511171,46.29088807927684],[-119.36309455053116,46.2969965430172],[-119.3636953653505,46.28928671878893],[-119.35897467748428,46.29675933384047],[-119.35974715368057,46.28786324793944],[-119.35210822240616,46.29474301435047],[-119.3559706033876,46.287032872860465],[-119.34738753453995,46.2913625474672],[-119.34507010595108,46.2836519300825],[-119.35365317479874,46.27665212227163],[-119.35880301610733,46.28519414038968],[-119.36506865636612,46.27843181920295],[-119.36824439183975,46.28685493370588],[-119.37365172521378,46.279677572662735],[-119.37579749242569,46.288397053843056],[-119.38180564061905,46.28382987964139],[-119.38120482579971,46.29391274356988],[-119.37682746068741,46.29124393080497],[-119.3735658945253,46.29581048685796]]};
-            
-            map.add(po_editor(shape));
-            gShape = shape;
-            return;
-            
-            var vector = po.geoJson();
-            map.add(vector);
-            vector
-                .on('load', po.stylist().attr('fill', "orange").attr('stroke', "red").attr('r', 5))
-                .on('load', function (e) {
-                    e.features.forEach(function (f) {
-                        d3.select(f.element).on("click", function () {
-                            console.log(this, arguments);
-                        });
-                    });
-                });
-            vector.features([{type:"Feature", geometry:{type:"Point", coordinates:[map.center().lon, map.center().lat]}, properties:null}]);
+            var editor = po_metakaolin_editor();
+            editor.geometry(shape);
+            map.add(editor);
         }
     </script>
 </body>
