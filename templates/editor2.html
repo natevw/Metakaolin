@@ -196,7 +196,7 @@
                                     }
                                 }
                                 if (n.ui.targetNode && targetNode !== n.ui.targetNode) {
-                                    n.ui.targetNode.ui.el.setAttribute('fill', '');
+                                    n.ui.targetNode.ui.el.removeAttribute('fill');
                                 }
                                 if (targetNode) {
                                     n.ui.targetNode = targetNode;
@@ -207,12 +207,12 @@
                             },
                             up: function (e) {
                                 _stopEvent(e);
-                                n.ui.el.setAttribute('fill', '');
+                                n.ui.el.removeAttribute('fill');
                                 uncapture('mouse');
                                 
                                 if (n.ui.targetNode) {          // remove after merging unique connections to target node
                                     var tn = n.ui.targetNode;
-                                    tn.ui.el.setAttribute('fill', '');
+                                    tn.ui.el.removeAttribute('fill');
                                     Object.keys(n.connectedTo).forEach(function (cid) {
                                         var c = n.connectedTo[cid],
                                             cn = nodeObjects[cid];
