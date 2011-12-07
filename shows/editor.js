@@ -8,7 +8,7 @@ function (doc, req) {
         doc || (doc = {creating:true, content:''});
         return fs.to_html(ddoc.templates.editor, {
             db_url:db_url, app_url:app_url, id: doc._id,
-            title: doc.title, content: doc.content
+            title: doc.title, content: JSON.stringify(doc.content)
         });
     });
 }

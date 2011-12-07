@@ -5,6 +5,7 @@
     <title>Metakaolin — Edit "{{ title }}"</title>
     <!-- -->
     <script src="{{app_url}}/d3.min.js"></script>
+    <script src="{{app_url}}/d3.geo.min.js"></script>
     <script src="{{app_url}}/fermata.min.js"></script>
     <script src="{{app_url}}/polymaps.min.js"></script>
     <script src="{{app_url}}/polymaps.editor.js"></script>
@@ -12,6 +13,7 @@
     
     <!-- temporary: allow quicker local development
     <script src="../_attachments/d3.min.js"></script>
+    <script src="../_attachments/d3.geo.min.js"></script>
     <script src="../_attachments/fermata.min.js"></script>
     <script src="../_attachments/polymaps.min.js"></script>
     <script src="../_attachments/polymaps.editor.js"></script>
@@ -28,8 +30,7 @@
         <a href="{{app_url}}/_show/files/{{id}}">Files...</a>
         <input name="title" placeholder="Document title" size="140" value="{{ title }}"></input>
         <button>Save</button>
-        <!--<textarea id="geojson_content" name="content" hidden>{{ content }}</textarea>-->
-        <textarea id="geojson_content" name="content" hidden></textarea>    
+        <textarea id="geojson_content" name="content" hidden>{{ content }}</textarea>
     <form>
     <div id="map"></div>
     
@@ -43,9 +44,16 @@
             + "/998/256/{Z}/{X}/{Y}.png")
             .hosts(["a.", "b.", "c.", ""])));
         
+        var vector = po.geoJson(),
+            editor = po_metakaolin_editor();
+        map.add(vector).add(editor);
+        
         var geojson_content = d3.select("#geojson_content").node();
         if (geojson_content.value) {
-            // TODO: draw, zoom to existing data
+            var geometry = JSON.parse(geojson_content.value),
+                bounds = d3.geo.bounds(geometry).map(function (c) { return {lon:c[0], lat:c[1]}; });
+            vector.features([{type:"Feature", properties:null, geometry:geometry}]);    // TODO: style, set dblclick handler to edit each feature
+            map.extent(bounds).zoomBy(-0.25);
         } else if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
             map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
             addEditablePoint();
@@ -60,7 +68,7 @@
             shape.coordinates[0].push([center.lon + size, center.lat - size]);
             shape.coordinates[0].push([center.lon - size, center.lat - size]);
             shape.coordinates[0].push([center.lon - size, center.lat + size]);
-            if (1) {
+            if (0) {
                 shape.type = (1) ? "LineString" : "MultiPoint";
                 shape.coordinates = shape.coordinates[0];
                 shape.coordinates.pop();
