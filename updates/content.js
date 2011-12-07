@@ -12,7 +12,7 @@ function (doc, req) {
     
     doc.last_modified = new Date().toISOString();
     doc.title = req.form.title;
-    doc.content = req.form.content;
+    doc.content = JSON.parse(req.form.content);
     
     var appURL = '/' + req.info.db_name + '/' + ddoc._id,
         docURL = appURL + '/_show/editor/' + doc._id;
