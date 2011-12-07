@@ -45,7 +45,7 @@ var po_metakaolin_editor = function () {
             return dumpGeometry();
         }
         resetNodes();
-        loadGeometry(geom);
+        if (geom) loadGeometry(geom);
         editor.reload();
         return editor;
     }
@@ -129,6 +129,10 @@ var po_metakaolin_editor = function () {
     
     function dumpGeometry() {
         // TODO: convert nodeObjects graph into simplest equivalent GeoJSON object (anything from Point -> GeometryCollection)
+        return {
+            type: "MultiPoint",
+            coordinates: Object.keys(nodeObjects).map(function (id) { return nodeObjects[id].position; })
+        };
     }
     
     
