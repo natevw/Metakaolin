@@ -32,13 +32,16 @@
         <!--<a href="{{app_url}}/_show/viewer/{{id}}">Cancel</a>-->
         <a href="{{app_url}}/_show/files/{{id}}">Files...</a>
         <input name="title" placeholder="Document title" value="{{ title }}"></input>
-        <button>Save</button>
+        <button>Save</button><br>
+        <a href class="add">⫀ Add shape</a>
         <textarea id="geojson_content" name="content" hidden>{{ content }}</textarea>
+        
     </form>
     <div id="shape_controls">
         <a href class="cancel">← Cancel</a>
         <!--<a href>Fields...</a>-->
-        <button class="save" type="button">Done</button>
+        <button class="save" type="button">Done</button><br>
+        <a href class="delete">∉ Remove shape</a>
     </div>
     
     <div id="map"></div>
@@ -64,6 +67,7 @@
                     d3.event.stopPropagation();
                     d3.event.preventDefault();
                     editGeometry(f.data.geometry);
+                    console.log(f);
                 }).on("mouseover", function () {
                     d3.select(this).attr('fill-opacity', 0.25);
                 }).on("mouseout", function () {
@@ -74,17 +78,48 @@
         
         var geoJsonEl = d3.select("#geojson_content").node(),
             featureCollection = (geoJsonEl.value) ? JSON.parse(geoJsonEl.value) : null;
-        function writeFeatures() {
+        function updateFeatures() {
             geoJsonEl.value = JSON.stringify(featureCollection);
+            vector.features(featureCollection.features);
         }
-        if (featureCollection) {
+        if (!featureCollection) {
+            featureCollection = {type:"FeatureCollection", features:[]};
+            updateFeatures();
+        }
+        
+        if (featureCollection.features.length) {
             var bounds = d3.geo.bounds(featureCollection).map(function (c) { return {lon:c[0], lat:c[1]}; });
             vector.features(featureCollection.features);
             map.extent(bounds).zoomBy(-0.25);
         } else if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
             map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
-            addEditablePoint();
         });
+        
+        d3.select('#doc_controls .add').on('click', function () {
+            d3.event.preventDefault();
+            addFeature();
+        });
+        
+        function addFeature() {
+            var geom = {type:"Polygon", coordinates:[[]]},
+                size = 0.00125,
+                center = map.center();
+            geom.coordinates[0].push([center.lon - size, center.lat + size]);
+            geom.coordinates[0].push([center.lon + size, center.lat + size]);
+            geom.coordinates[0].push([center.lon + size, center.lat - size]);
+            geom.coordinates[0].push([center.lon - size, center.lat - size]);
+            geom.coordinates[0].push([center.lon - size, center.lat + size]);
+            if (0) {
+                geom.type = (1) ? "LineString" : "MultiPoint";
+                geom.coordinates = geom.coordinates[0];
+                geom.coordinates.pop();
+            } else if (1) {
+                geom = {type:"GeometryCollection", geometries:[geom]};
+            }
+            featureCollection.features.push({type:"Feature", properties:null, geometry:geom});
+            updateFeatures();
+            editGeometry(geom);
+        }
         
         var editingGeometry = null;
         function editGeometry(geom) {
@@ -98,8 +133,15 @@
                 if (key === "geometries") delete editingGeometry["coordinates"];
                 if (key === "coordinates") delete editingGeometry["geometries"];
             });
-            writeFeatures();
-            vector.reload();
+            updateFeatures();
+            finishEditing();
+        }
+        function deleteEdited() {
+            var removedFeature = featureCollection.features.filter(function (f) { return f.geometry === editingGeometry; })[0];
+            console.log(featureCollection.features.length);
+            featureCollection.features = featureCollection.features.filter(function (f) { return f !== removedFeature; });
+            console.log(featureCollection.features.length);
+            updateFeatures();
             finishEditing();
         }
         function finishEditing() {
@@ -114,26 +156,10 @@
             d3.event.preventDefault();
             saveEdits();
         });
-        
-        
-        function addEditablePoint () {
-            var shape = {type:"Polygon", coordinates:[[]]},
-                size = 0.00125,
-                center = map.center();
-            shape.coordinates[0].push([center.lon - size, center.lat + size]);
-            shape.coordinates[0].push([center.lon + size, center.lat + size]);
-            shape.coordinates[0].push([center.lon + size, center.lat - size]);
-            shape.coordinates[0].push([center.lon - size, center.lat - size]);
-            shape.coordinates[0].push([center.lon - size, center.lat + size]);
-            if (0) {
-                shape.type = (1) ? "LineString" : "MultiPoint";
-                shape.coordinates = shape.coordinates[0];
-                shape.coordinates.pop();
-            } else if (1) {
-                shape = {type:"GeometryCollection", geometries:[shape]};
-            }
-            editGeometry(shape);
-        }
+        d3.select('#shape_controls .delete').on('click', function () {
+            d3.event.preventDefault();
+            deleteEdited();
+        });
     </script>
 </body>
 </html>
