@@ -127,14 +127,98 @@ var po_metakaolin_editor = function () {
         }
     }
     
-    function dumpGeometry() {
-        // TODO: convert nodeObjects graph into simplest equivalent GeoJSON object (anything from Point -> GeometryCollection)
-        return {
-            type: "MultiPoint",
-            coordinates: Object.keys(nodeObjects).map(function (id) { return nodeObjects[id].position; })
-        };
-    }
     
+    function dumpGeometry() {
+        var points = [], lines = [], rings = [],
+            consumedNodes = {}, currentObject = null;
+        
+        // first pass grab all points and line segments
+        Object.keys(nodeObjects).forEach(function (id) {
+            if (consumedNodes[id]) return;
+            
+            var node = nodeObjects[id],
+                connections = Object.keys(node.connectedTo);
+            
+            if (!connections.length) {
+                // a rock feels no pain. an island never cries.
+                points.push(node.position);
+                consumedNodes[node.id] = true;
+            } else if (connections.length == 1) {
+                // end of line segment, collect all subsequent
+                var line = [], nextId;
+                while (node) {
+                    line.push(node.position);
+                    consumedNodes[node.id] = true;
+                    nextId = connections.filter(function (cid) { return !consumedNodes[cid]; })[0];
+                    node = nextId && nodeObjects[nextId];
+                    connections = node && Object.keys(node.connectedTo);
+                }
+                lines.push(line);
+            } else {
+                // middle of ring or line, skip for now
+            }
+        });
+        
+        // now we can assume any un-consumed nodes belong to rings
+        Object.keys(nodeObjects).forEach(function (id) {
+            if (consumedNodes[id]) return;
+            
+            var node = nodeObjects[id],
+                connections = Object.keys(node.connectedTo);
+            
+            var ring = [], nextId;
+            while (node) {
+                ring.push(node.position);
+                consumedNodes[node.id] = true;
+                nextId = connections.filter(function (cid) { return !consumedNodes[cid]; })[0];
+                node = nextId && nodeObjects[nextId];
+                connections = node && Object.keys(node.connectedTo);
+            }
+            ring.push(ring[0]);
+            rings.push(ring);
+        });
+        
+        // now convert into simplest equivalent GeoJSON object (anything from Point -> GeometryCollection)
+        var geometry = {};
+        if (points.length && !lines.length && !rings.length) {
+            if (points.length == 1) {
+                geometry.type = "Point";
+                geometry.coordinates = points[0];
+            } else {
+                geometry.type = "MultiPoint";
+                geometry.coordinates = points;
+            }
+        } else if (lines.length && !points.length && !rings.length) {
+            if (lines.length == 1) {
+                geometry.type = "LineString";
+                geometry.coordinates = lines[0];
+            } else {
+                geometry.type = "MultiLineString";
+                geometry.coordinates = lines;
+            }
+        } else if (rings.length && !points.length && !lines.length) {
+            if (rings.length == 1) {
+                geometry.type = "Polygon";
+                geometry.coordinates = rings;
+            } else {
+                geometry.type = "MultiPolygon";
+                geometry.coordinates = rings.map(function (ring) { return [ring]; });
+            }
+        } else {
+            geometry.type = "GeometryCollection";
+            geometry.geometries = [];
+            points.forEach(function (p) {
+                geometry.geometries.push({type:"Point", coordinates:p});
+            });
+            lines.forEach(function (l) {
+                geometry.geometries.push({type:"LineString", coordinates:l});
+            });
+            rings.forEach(function (r) {
+                geometry.geometries.push({type:"Polygon", coordinates:[r]});
+            });
+        }
+        return geometry;
+    }
     
     
     // three core interactions: "extend" a point (/refine a segment), "break" a connection, "merge" two points

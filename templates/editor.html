@@ -57,9 +57,9 @@
             editor = po_metakaolin_editor();
         map.add(vector).add(editor);
         
-        vector.on('load', po.stylist().attr('fill', "grey").attr('fill-opacity', 0.5).attr('stroke', "black"));
-        vector.on('load', function (loadEvent) {
-            loadEvent.features.forEach(function (f) {
+        vector.on('show', po.stylist().attr('fill', "grey").attr('fill-opacity', 0.5).attr('stroke', "black"));
+        vector.on('show', function (loadEvent) {
+            loadEvent.features.forEach(function (f,i) {
                 d3.select(f.element).on("dblclick", function () {
                     d3.event.stopPropagation();
                     d3.event.preventDefault();
@@ -95,6 +95,8 @@
             var newGeometry = editor.geometry();
             Object.keys(newGeometry).forEach(function (key) {
                 editingGeometry[key] = newGeometry[key];
+                if (key === "geometries") delete editingGeometry["coordinates"];
+                if (key === "coordinates") delete editingGeometry["geometries"];
             });
             writeFeatures();
             vector.reload();
