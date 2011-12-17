@@ -11,7 +11,7 @@ function (doc, req) {
     }
     
     doc.last_modified = new Date().toISOString();
-    doc.title = req.form.title;
+    doc.title = req.form.title || "<untitled>";
     doc.content = JSON.parse(req.form.content);
     
     var appURL = '/' + req.info.db_name + '/' + ddoc._id,
