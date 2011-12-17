@@ -274,7 +274,7 @@ var po_metakaolin_editor = function () {
                         });
                         
                         // cheatly hit testing, HT http://stackoverflow.com/questions/2174640/hit-testing-svg-shapes
-                        n.ui.el.style.setProperty('display', "none");
+                        n.ui.el.style.setProperty('display', "none", null);
                         var targetNode, targetConnection, targetEl = document.elementFromPoint(e.pageX, e.pageY);
                         if (targetEl.parentNode === nodesLayer) {
                             targetNode = targetEl._graph_node;
