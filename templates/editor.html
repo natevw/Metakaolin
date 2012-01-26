@@ -9,6 +9,7 @@
     <script src="{{app_url}}/fermata.min.js"></script>
     <script src="{{app_url}}/polymaps.min.js"></script>
     <script src="{{app_url}}/polymaps.editor.js"></script>
+    <script src="{{app_url}}/polymaps.viewer.js"></script>
     <!-- -->
     
     <!-- temporary: allow quicker local development
@@ -56,7 +57,7 @@
             + "/998/256/{Z}/{X}/{Y}.png")
             .hosts(["a.", "b.", "c.", ""])));
         
-        var vector = po.geoJson(),
+        var vector = po_metakaolin_viewer(),
             editor = po_metakaolin_editor();
         map.add(vector).add(editor);
         
