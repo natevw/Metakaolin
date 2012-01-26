@@ -25,6 +25,10 @@
         
         #shape_controls, .editing_shape #doc_controls { display: none; }
         #doc_controls, .editing_shape #shape_controls { display: block; }
+        
+        .viewer { fill: grey; fill-opacity: 0.5; stroke: black; }
+        .viewer polyline { fill: none; }
+        .viewer .hover { fill-opacity: 0.25; }
     </style>
 </head>
 <body>
@@ -61,19 +65,21 @@
             editor = po_metakaolin_editor();
         map.add(vector).add(editor);
         
-        vector.on('show', po.stylist().attr('fill', "grey").attr('fill-opacity', 0.5).attr('stroke', "black"));
+        d3.select(vector.container()).classed('viewer', true);
         vector.on('show', function (loadEvent) {
             loadEvent.features.forEach(function (f,i) {
+                var color = ["red", "green", "blue"][i%3];
                 d3.select(f.element).on("dblclick", function () {
                     d3.event.stopPropagation();
                     d3.event.preventDefault();
                     editGeometry(f.data.geometry);
                     console.log(f);
                 }).on("mouseover", function () {
-                    d3.select(this).attr('fill-opacity', 0.25);
+                    d3.select(this).classed('hover', true);
                 }).on("mouseout", function () {
-                    d3.select(this).attr('fill-opacity', 0.5);
-                });
+                    d3.select(this).classed('hover', false);
+                }).style('fill', color).style('stroke', color);;
+                
             });        
         });
         
