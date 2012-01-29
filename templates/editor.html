@@ -58,11 +58,22 @@
         var po = org.polymaps,
             map = po.map().container(d3.select('#map').append("svg:svg").node());
         map.add(po.interact());
+        
+        // TODO: properly attribute whichever layer is used
+        /*
         map.add(po.image()
             .url(po.url("http://{S}tile.cloudmade.com"
             + "/51664f123b50414da85e963f92c721f0"
             + "/998/256/{Z}/{X}/{Y}.png")
             .hosts(["a.", "b.", "c.", ""])));
+        */
+        map.add(po.image()
+            .url(po.url("http://oatile{S}.mqcdn.com/naip"
+            + "/{Z}/{X}/{Y}.jpg")
+            .hosts([1, 2, 3, 4])));
+        
+        
+        
         
         var vector = po_metakaolin_viewer(),
             editor = po_metakaolin_editor();
