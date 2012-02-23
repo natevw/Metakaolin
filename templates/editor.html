@@ -61,14 +61,12 @@
         map.add(po.interact());
         
         // TODO: properly attribute whichever layer is used
-        /*
-        map.add(po.image()
+        if (0) map.add(po.image()
             .url(po.url("http://{S}tile.cloudmade.com"
             + "/51664f123b50414da85e963f92c721f0"
             + "/998/256/{Z}/{X}/{Y}.png")
             .hosts(["a.", "b.", "c.", ""])));
-        */
-        map.add(po.image()
+        else map.add(po.image()
             .url(po.url("http://oatile{S}.mqcdn.com/naip"
             + "/{Z}/{X}/{Y}.jpg")
             .hosts([1, 2, 3, 4])));
