@@ -41,10 +41,9 @@
         <!--<a href="{{app_url}}/_show/viewer/{{id}}">Cancel</a>-->
         <!--<a href="{{app_url}}/_show/files/{{id}}">Files...</a>-->
         <input name="title" placeholder="Document title" value="{{ title }}"></input>
-        <button>Save</button><br>
+        <button class="save" disabled>Save</button><br>
         <a href class="add">⫀ Add shape</a>
         <textarea id="geojson_content" name="content" hidden>{{ content }}</textarea>
-        
     </form>
     <div id="shape_controls">
         <a href class="cancel">← Cancel</a>
@@ -98,6 +97,7 @@
         function updateFeatures() {
             geoJsonEl.value = JSON.stringify(featureCollection);
             vector.features(featureCollection.features);
+            d3.select('#doc_controls .save').property('disabled', false);
         }
         if (!featureCollection) {
             featureCollection = {type:"FeatureCollection", features:[]};
@@ -116,6 +116,17 @@
             d3.event.preventDefault();
             addFeature();
         });
+        d3.select('input[name=title]').on('change', function () {
+            d3.select('#doc_controls .save').property('disabled', false);
+        });
+        d3.select('#doc_controls').on('submit', function () {
+            d3.select('#doc_controls .save').property('disabled', true);
+        });
+        window.addEventListener('beforeunload', function () {
+            if (d3.select('#doc_controls .save').property('disabled') === false) {
+                return 'You have unsaved changes that will be lost.';
+            }
+        }, false);
         
         function addFeature() {
             var geom = {type:"Polygon", coordinates:[[]]},
