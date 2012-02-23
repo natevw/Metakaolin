@@ -32,6 +32,7 @@
         .viewer .color0 { fill: red; stroke: red; }
         .viewer .color1 { fill: green; stroke: green; }
         .viewer .color2 { fill: blue; stroke: blue; }
+        .viewer .editing { fill-opacity: 0.05; stroke-opacity: 0.1; }
     </style>
 </head>
 <body>
@@ -86,13 +87,12 @@
                     d3.event.stopPropagation();
                     d3.event.preventDefault();
                     editGeometry(f.data.geometry);
-                    console.log(f);
                 }).on("mouseover", function () {
                     d3.select(this).classed('hover', true);
                 }).on("mouseout", function () {
                     d3.select(this).classed('hover', false);
-                }).classed('color' + (i % 3), true);
-            });        
+                }).classed('color' + (i % 3), true).classed('editing', f.data.geometry === editingGeometry);
+            });
         });
         
         var geoJsonEl = d3.select("#geojson_content").node(),
@@ -144,6 +144,7 @@
         function editGeometry(geom) {
             d3.select(document.body).classed('editing_shape', true);
             editor.geometry(editingGeometry = geom);
+            vector.reshow();
         }
         function saveEdits() {
             var newGeometry = editor.geometry();
@@ -165,6 +166,7 @@
         }
         function finishEditing() {
             editor.geometry(editingGeometry = null);
+            vector.reshow();
             d3.select(document.body).classed('editing_shape', false);
         }
         d3.select('#shape_controls .cancel').on('click', function () {
