@@ -49,6 +49,12 @@ var po_metakaolin_viewer = function () {
         return viewer;
     };
     
+    viewer.reshow = function () {
+        var locks = viewer.cache.locks();
+        for (var key in locks) viewer.show(locks[key]);
+        return viewer;
+    };
+    
     function load(tile, tileProj) {
         function geometryElement(geom) {
             var DRAW = {
