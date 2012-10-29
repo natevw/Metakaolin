@@ -60,15 +60,20 @@
         map.add(po.interact());
         
         // TODO: properly attribute whichever layer is used
-        if (0) map.add(po.image()
+        if (1) map.add(po.image()
+            .url(po.url("http://temp{S}.argyl.es/preview-key"
+            + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3])));
+        else if (0) map.add(po.image()
+            .url(po.url("http://oatile{S}.mqcdn.com/naip"
+            + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3, 4])));
+        else if (0) map.add(po.image()
             .url(po.url("http://{S}tile.cloudmade.com"
             + "/51664f123b50414da85e963f92c721f0"
             + "/998/256/{Z}/{X}/{Y}.png")
             .hosts(["a.", "b.", "c.", ""])));
         else map.add(po.image()
-            .url(po.url("http://oatile{S}.mqcdn.com/naip"
-            + "/{Z}/{X}/{Y}.jpg")
-            .hosts([1, 2, 3, 4])));
+            .url(po.url("http://{S}tile.openstreetmap.org/{Z}/{X}/{Y}.png")
+            .hosts(["a.", "b.", "c.", ""])));
         
         
         
