@@ -64,22 +64,22 @@
         map.add(po.interact());
         
         // TODO: properly attribute whichever layer is used
-        if (1) map.add(po.image()
-            .url(po.url("http://temp{S}.argyl.es/preview-key"
-            + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3])));
-        else if (0) map.add(po.image()
-            .url(po.url("http://oatile{S}.mqcdn.com/naip"
-            + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3, 4])));
-        else if (0) map.add(po.image()
-            .url(po.url("http://{S}tile.cloudmade.com"
+        var tiles = po.image().on('load', function (e) {
+            // https://github.com/simplegeo/polymaps/issues/36
+            e.tile.element.width.baseVal.value += 1;
+            e.tile.element.height.baseVal.value += 1;
+        });
+        if (1) tiles.url(po.url("http://temp{S}.argyl.es/preview-key"
+            + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3]));
+        else if (0) tiles.url(po.url("http://oatile{S}.mqcdn.com/naip"
+            + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3, 4]));
+        else if (0) tiles.url(po.url("http://{S}tile.cloudmade.com"
             + "/51664f123b50414da85e963f92c721f0"
             + "/998/256/{Z}/{X}/{Y}.png")
-            .hosts(["a.", "b.", "c.", ""])));
-        else map.add(po.image()
-            .url(po.url("http://{S}tile.openstreetmap.org/{Z}/{X}/{Y}.png")
-            .hosts(["a.", "b.", "c.", ""])));
-        
-        
+            .hosts(["a.", "b.", "c.", ""]));
+        else tiles.url(po.url("http://{S}tile.openstreetmap.org/{Z}/{X}/{Y}.png")
+            .hosts(["a.", "b.", "c.", ""]));
+        map.add(tiles);
         
         
         var vector = po_metakaolin_viewer(),
