@@ -31,9 +31,9 @@ var po_metakaolin_editor = function () {
     var po = org.polymaps,
         DOUBLE_CLICK_MSEC = 300,
         MAX_CONNECTIONS = 2,        // prevent full-fledged node networks from springing up
-        MARKER_RADIUS = 5,
+        MARKER_RADIUS = (window.TouchEvent) ? 50 : 5,
         HIGHLIGHT_WIDTH = 2,
-        CONNECTION_WIDTH = 5;
+        CONNECTION_WIDTH = (window.TouchEvent) ? 15 : 5;
     
     var editor = po.layer(load);
     editor.tile(false);
@@ -247,6 +247,7 @@ var po_metakaolin_editor = function () {
             }
             if (n.ui.el.parentNode !== nodesLayer) {
                 n.ui.el.removeEventListener('mousedown', n.ui.mousedownListener, false);
+                n.ui.el.removeEventListener('touchstart', n.ui.mousedownListener, false);
                 n.ui.el.addEventListener('mousedown', n.ui.mousedownListener = function (e) {
                     _stopEvent(e);
                     if (n.ui.createNew) {
@@ -258,6 +259,7 @@ var po_metakaolin_editor = function () {
                         nn.ui.targetNode = n;
                     } else setupCapture();
                 }, false);
+                n.ui.el.addEventListener('touchstart', n.ui.mousedownListener, false);
                 
                 nodesLayer.appendChild(n.ui.el);
             }
@@ -378,6 +380,7 @@ var po_metakaolin_editor = function () {
                     chromeLayer.removeChild(c.ui.newVertex);
                 }, false);
                 c.ui.el.removeEventListener('mousedown', c.ui.mousedownListener, false);
+                c.ui.el.removeEventListener('touchstart', c.ui.mousedownListener, false);
                 c.ui.el.addEventListener('mousedown', c.ui.mousedownListener = function (e) {
                     _stopEvent(e);
                     var coord = _getLocation(e);
@@ -390,6 +393,8 @@ var po_metakaolin_editor = function () {
                     setupNodeUI(nn, 'precaptured');
                     removeConnectionUI(c);
                 }, false);
+                c.ui.el.addEventListener('touchstart', c.ui.mousedownListener, false);
+                
                 connectionsLayer.appendChild(c.ui.el);
             }
             
@@ -414,6 +419,9 @@ var po_metakaolin_editor = function () {
             return pt;
         }
         function _getLocation(e) {
+            if (window.TouchEvent && e instanceof TouchEvent) {
+                e = e.touches[0];
+            }
             var mouse = editor.map().mouse(e);
             return editor.map().pointLocation(mouse);
         }
@@ -451,12 +459,31 @@ var po_metakaolin_editor = function () {
             return owner.move(e);
         };
     }, false);
+    window.addEventListener('touchmove', function (e) {
+        var owner = inputOwners['mouse'];
+        if (owner && owner.move) {
+            return owner.move(e);
+        };
+    }, false);
     window.addEventListener('mouseup', function (e) {
         var owner = inputOwners['mouse'];
         if (owner && owner.up) {
             return owner.up(e);
         };
     }, false);
+    window.addEventListener('touchend', function (e) {
+        var owner = inputOwners['mouse'];
+        if (owner && owner.up) {
+            return owner.up(e);
+        };
+    }, false);
+    window.addEventListener('touchend', function (e) {
+        var owner = inputOwners['mouse'];
+        if (owner && owner.up) {
+            return owner.up(e);
+        };
+    }, false);
+    
     
     
     return editor;

@@ -89,7 +89,8 @@
         d3.select(vector.container()).classed('viewer', true);
         vector.on('show', function (loadEvent) {
             loadEvent.features.forEach(function (f,i) {
-                d3.select(f.element).on("dblclick", function () {
+                //d3.select(f.element).on('dblclick', function () {
+                d3.select(f.element).on('click', function () {
                     d3.event.stopPropagation();
                     d3.event.preventDefault();
                     editGeometry(f.data.geometry);
