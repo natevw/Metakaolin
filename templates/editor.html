@@ -56,7 +56,10 @@
     
     <script>
         var po = org.polymaps,
-            map = po.map().container(d3.select('#map').append("svg:svg").node());
+            map = po.map().container(d3.select('#map').append("svg:svg")
+              .attr("height", "100%")
+              .attr("width", "100%")
+              .node());
         map.add(po.interact());
         
         // TODO: properly attribute whichever layer is used
