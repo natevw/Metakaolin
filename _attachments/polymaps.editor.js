@@ -226,6 +226,12 @@ var po_metakaolin_editor = function () {
     // to unlink segments, tap a point or segment and 
     // to delete a point, drop it onto another — this combines their connections as well and can be used to link segments together
     function _stopEvent(e) { e.preventDefault(); e.stopPropagation(); }
+    function watch(el, ui, cb) {
+        el.removeEventListener('mousedown', ui.mousedownListener, false);
+        el.removeEventListener('touchstart', ui.mousedownListener, false);
+        el.addEventListener('mousedown', ui.mousedownListener = cb);
+        el.addEventListener('touchstart', ui.mousedownListener, false);
+    }
     
     function load(tile, tileProj) {
         tile.element = po.svg('g');
@@ -246,9 +252,7 @@ var po_metakaolin_editor = function () {
                 n.ui.el._graph_node = n;
             }
             if (n.ui.el.parentNode !== nodesLayer) {
-                n.ui.el.removeEventListener('mousedown', n.ui.mousedownListener, false);
-                n.ui.el.removeEventListener('touchstart', n.ui.mousedownListener, false);
-                n.ui.el.addEventListener('mousedown', n.ui.mousedownListener = function (e) {
+                watch(n.ui.el, n.ui, function (e) {
                     _stopEvent(e);
                     if (n.ui.createNew) {
                         var coord = _getLocation(e);
@@ -258,9 +262,7 @@ var po_metakaolin_editor = function () {
                         setupNodeUI(nn, 'precaptured');
                         nn.ui.targetNode = n;
                     } else setupCapture();
-                }, false);
-                n.ui.el.addEventListener('touchstart', n.ui.mousedownListener, false);
-                
+                });
                 nodesLayer.appendChild(n.ui.el);
             }
             function setupCapture() {
@@ -379,9 +381,7 @@ var po_metakaolin_editor = function () {
                     _stopEvent(e);
                     chromeLayer.removeChild(c.ui.newVertex);
                 }, false);
-                c.ui.el.removeEventListener('mousedown', c.ui.mousedownListener, false);
-                c.ui.el.removeEventListener('touchstart', c.ui.mousedownListener, false);
-                c.ui.el.addEventListener('mousedown', c.ui.mousedownListener = function (e) {
+                watch(c.ui.el, c.ui, function (e) {
                     _stopEvent(e);
                     var coord = _getLocation(e);
                     disconnectNodes(c.ui.n1, c.ui.n2);
@@ -392,8 +392,7 @@ var po_metakaolin_editor = function () {
                     if (c2) setupConnectionUI(c2, nn), setupConnectionUI(c2, c.ui.n2);
                     setupNodeUI(nn, 'precaptured');
                     removeConnectionUI(c);
-                }, false);
-                c.ui.el.addEventListener('touchstart', c.ui.mousedownListener, false);
+                });
                 
                 connectionsLayer.appendChild(c.ui.el);
             }
@@ -483,8 +482,6 @@ var po_metakaolin_editor = function () {
             return owner.up(e);
         };
     }, false);
-    
-    
     
     return editor;
 };
