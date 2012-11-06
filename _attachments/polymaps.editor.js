@@ -225,13 +225,7 @@ var po_metakaolin_editor = function () {
     // to add a new point, tap an existing one and pull its extension onto the map
     // to unlink segments, tap a point or segment and 
     // to delete a point, drop it onto another — this combines their connections as well and can be used to link segments together
-    function _stopEvent(e) { e.preventDefault(); e.stopPropagation(); }
-    function watch(el, ui, cb) {
-        el.removeEventListener('mousedown', ui.mousedownListener, false);
-        el.removeEventListener('touchstart', ui.mousedownListener, false);
-        el.addEventListener('mousedown', ui.mousedownListener = cb);
-        el.addEventListener('touchstart', ui.mousedownListener, false);
-    }
+    
     
     function load(tile, tileProj) {
         tile.element = po.svg('g');
@@ -243,7 +237,7 @@ var po_metakaolin_editor = function () {
         tile.element.appendChild(nodesLayer);
         tile.element.appendChild(chromeLayer);
         
-        function setupNodeUI(n, precaptured) {
+        function setupNodeUI(n, captureInfo) {
             if (!n.ui) {
                 n.ui = {};
                 n.ui.el = po.svg('circle');
@@ -252,25 +246,25 @@ var po_metakaolin_editor = function () {
                 n.ui.el._graph_node = n;
             }
             if (n.ui.el.parentNode !== nodesLayer) {
-                watch(n.ui.el, n.ui, function (e) {
+                watch(n.ui.el, n.ui, function (e, ptr) {
                     _stopEvent(e);
                     if (n.ui.createNew) {
-                        var coord = _getLocation(e);
+                        var coord = _getLocation(ptr);
                         var nn = createNode([coord.lon, coord.lat]),
                             nc = (Object.keys(n.connectedTo).length < MAX_CONNECTIONS) ? connectNodes(n, nn) : null;
                         if (nc) setupConnectionUI(nc, nn), setupConnectionUI(nc, n);
-                        setupNodeUI(nn, 'precaptured');
+                        setupNodeUI(nn, {e:e,ptr:ptr});
                         nn.ui.targetNode = n;
-                    } else setupCapture();
+                    } else setupCapture(e, ptr);
                 });
                 nodesLayer.appendChild(n.ui.el);
             }
-            function setupCapture() {
+            function setupCapture(e, ptr) {
                 n.ui.el.setAttribute('fill', "yellow");
-                capture('mouse', {
-                    move: function (e) {
+                capture(e, ptr, {
+                    move: function (e, ptr) {
                         _stopEvent(e);
-                        var coord = _getLocation(e);
+                        var coord = _getLocation(ptr);
                         n.position[0] = coord.lon, n.position[1] = coord.lat;
                         _setPosition(n.ui.el, 'c_', n.position);
                         Object.keys(n.connectedTo).forEach(function (cid) {
@@ -279,7 +273,7 @@ var po_metakaolin_editor = function () {
                         
                         // cheatly hit testing, HT http://stackoverflow.com/questions/2174640/hit-testing-svg-shapes
                         n.ui.el.style.setProperty('display', "none", null);
-                        var targetNode, targetConnection, targetEl = document.elementFromPoint(e.pageX, e.pageY);
+                        var targetNode, targetConnection, targetEl = document.elementFromPoint(ptr.pageX, ptr.pageY);
                         if (targetEl.parentNode === nodesLayer) {
                             targetNode = targetEl._graph_node;
                         } else if (targetEl.parentNode === connectionsLayer) {
@@ -306,10 +300,10 @@ var po_metakaolin_editor = function () {
                             delete n.ui.targetNode;
                         }
                     },
-                    up: function (e) {
+                    up: function (e, ptr) {
                         _stopEvent(e);
                         n.ui.el.removeAttribute('fill');
-                        uncapture('mouse');
+                        uncapture(e, ptr);
                         
                         if (n.ui.targetNode) {          // remove after merging unique connections to target node
                             var tn = n.ui.targetNode;
@@ -337,7 +331,7 @@ var po_metakaolin_editor = function () {
                     }
                 });
             }
-            if (precaptured) setupCapture();
+            if (captureInfo) setupCapture(captureInfo.e, captureInfo.ptr);
             
             _setPosition(n.ui.el, 'c_', n.position);
         }
@@ -381,16 +375,16 @@ var po_metakaolin_editor = function () {
                     _stopEvent(e);
                     chromeLayer.removeChild(c.ui.newVertex);
                 }, false);
-                watch(c.ui.el, c.ui, function (e) {
+                watch(c.ui.el, c.ui, function (e, ptr) {
                     _stopEvent(e);
-                    var coord = _getLocation(e);
+                    var coord = _getLocation(ptr);
                     disconnectNodes(c.ui.n1, c.ui.n2);
                     var nn = createNode([coord.lon, coord.lat]),
                         c1 = (_dist(c.ui.n1.position, nn.position) > 2*MARKER_RADIUS) ? connectNodes(c.ui.n1, nn) : null,
                         c2 = (_dist(c.ui.n2.position, nn.position) > 2*MARKER_RADIUS) ? connectNodes(c.ui.n2, nn) : null;
                     if (c1) setupConnectionUI(c1, nn), setupConnectionUI(c1, c.ui.n1);
                     if (c2) setupConnectionUI(c2, nn), setupConnectionUI(c2, c.ui.n2);
-                    setupNodeUI(nn, 'precaptured');
+                    setupNodeUI(nn, {e:e, ptr:ptr});
                     removeConnectionUI(c);
                 });
                 
@@ -417,11 +411,8 @@ var po_metakaolin_editor = function () {
             el.setAttribute(attr.replace('_','y'), pt.y);
             return pt;
         }
-        function _getLocation(e) {
-            if (window.TouchEvent && e instanceof TouchEvent) {
-                e = e.touches[0];
-            }
-            var mouse = editor.map().mouse(e);
+        function _getLocation(ptr) {
+            var mouse = editor.map().mouse(ptr);
             return editor.map().pointLocation(mouse);
         }
         function _dist(pos1, pos2) {
@@ -442,44 +433,63 @@ var po_metakaolin_editor = function () {
     }
     
     
-    // on mouse/touch down, an object can "capture" that input and these window move/up listeners will dispatch to its handlers
+    // on mouse/touch/(TBD: pointer) down, an object can "capture" that input and these window move/up listeners will dispatch to its handlers
+    
+    function _stopEvent(e) { e.preventDefault(); e.stopPropagation(); }
     
     var inputOwners = {};
-    function capture(source, events) {
-        inputOwners[source] = events;
+    function watch(el, ui, cb) {
+        el.removeEventListener('mousedown', ui.mousedownListener, false);
+        el.removeEventListener('touchstart', ui.touchstartListener, false);
+        el.addEventListener('mousedown', ui.mousedownListener = function (e) {
+            return cb(e, e);
+        });
+        el.addEventListener('touchstart', ui.touchstartListener = function (e) {
+            var targetEl = e.target;
+            targetEl.addEventListener('touchmove', ui.touchmoveListener = function (e) {
+                [].forEach.call(e.changedTouches, function (ptr) {
+                    var owner = inputOwners['touch-'+ptr.identifier];
+                    if (owner && owner.move) return owner.move(e, ptr);
+                });
+            }, false);
+            targetEl.addEventListener('touchend', ui.touchoffListener = function (e) {
+                targetEl.removeEventListener('touchmove', ui.touchmoveListener, false);
+                targetEl.removeEventListener('touchend', ui.touchoffListener, false);
+                targetEl.removeEventListener('touchcancel', ui.touchoffListener, false);
+                [].forEach.call(e.changedTouches, function (ptr) {
+                    var owner = inputOwners['touch-'+ptr.identifier];
+                    if (owner && owner.up) return owner.up(e, ptr);
+                });
+            }, false);
+            targetEl.addEventListener('touchcancel', ui.touchoffListener, false);
+            return cb(e, e.changedTouches[0]);
+        }, false);
     }
-    function uncapture(source) {
+    function capture(e, ptr, owner) {
+        var source;
+        if (window.TouchEvent && e instanceof TouchEvent) {
+            source = 'touch-'+ptr.identifier;
+        } else source = 'mouse';
+        inputOwners[source] = owner;
+    }
+    function uncapture(e, ptr) {
+        var source;
+        if (ptr !== e) {
+            source = 'touch-'+ptr.identifier;
+        } else source = 'mouse';
         delete inputOwners[source];
     }
     
     window.addEventListener('mousemove', function (e) {
         var owner = inputOwners['mouse'];
         if (owner && owner.move) {
-            return owner.move(e);
-        };
-    }, false);
-    window.addEventListener('touchmove', function (e) {
-        var owner = inputOwners['mouse'];
-        if (owner && owner.move) {
-            return owner.move(e);
+            return owner.move(e, e);
         };
     }, false);
     window.addEventListener('mouseup', function (e) {
         var owner = inputOwners['mouse'];
         if (owner && owner.up) {
-            return owner.up(e);
-        };
-    }, false);
-    window.addEventListener('touchend', function (e) {
-        var owner = inputOwners['mouse'];
-        if (owner && owner.up) {
-            return owner.up(e);
-        };
-    }, false);
-    window.addEventListener('touchend', function (e) {
-        var owner = inputOwners['mouse'];
-        if (owner && owner.up) {
-            return owner.up(e);
+            return owner.up(e, e);
         };
     }, false);
     
