@@ -226,6 +226,8 @@ var po_metakaolin_editor = function () {
     // to unlink segments, tap a point or segment and 
     // to delete a point, drop it onto another — this combines their connections as well and can be used to link segments together
     
+    // WORKAROUND: enable code below to deal with http://code.google.com/p/chromium/issues/detail?id=141840
+    var bug141840 = (~navigator.userAgent.indexOf('Android') && (navigator.appVersion.match(/Chrome\/(.*?) /) || ["N/A"])[1] < "19");
     
     function load(tile, tileProj) {
         tile.element = po.svg('g');
@@ -273,7 +275,11 @@ var po_metakaolin_editor = function () {
                         
                         // cheatly hit testing, HT http://stackoverflow.com/questions/2174640/hit-testing-svg-shapes
                         n.ui.el.style.setProperty('display', "none", null);
-                        var targetNode, targetConnection, targetEl = document.elementFromPoint(ptr.pageX, ptr.pageY);
+                        var targetNode, targetConnection;
+                        var targetEl = (!bug141840) ?
+                            document.elementFromPoint(ptr.pageX, ptr.pageY) :
+                            document.elementFromPoint(ptr.screenX, ptr.screenY);
+                        
                         if (targetEl.parentNode === nodesLayer) {
                             targetNode = targetEl._graph_node;
                         } else if (targetEl.parentNode === connectionsLayer) {
