@@ -61,16 +61,16 @@
               .attr("height", "100%")
               .attr("width", "100%")
               .node());
-        map.add(po.interact());
+        map.add(po.interact()).zoomRange([0,24]);
         
         // TODO: properly attribute whichever layer is used
         var tiles = po.image().on('load', function (e) {
             // https://github.com/simplegeo/polymaps/issues/36
             e.tile.element.width.baseVal.value += 1;
             e.tile.element.height.baseVal.value += 1;
-        });
-        if (1) tiles.url(po.url("http://temp{S}.argyl.es/preview-key"
-            + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3]));
+        }).zoom(function(z) { return Math.max(0, Math.min(18, z)); });
+        if (1) tiles.url(po.url("http://temp{S}.argyl.es/preview-key/{Z}/{X}/{Y}.jpg")
+            .hosts([1, 2, 3]));
         else if (0) tiles.url(po.url("http://oatile{S}.mqcdn.com/naip"
             + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3, 4]));
         else if (0) tiles.url(po.url("http://{S}tile.cloudmade.com"
