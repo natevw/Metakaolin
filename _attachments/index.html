@@ -2,57 +2,18 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Metakaolin — Edit "{{ title }}"</title>
-    <!-- -->
-    <script src="{{app_url}}/d3.min.js"></script>
-    <script src="{{app_url}}/d3.geo.min.js"></script>
-    <script src="{{app_url}}/fermata.min.js"></script>
-    <script src="{{app_url}}/polymaps.min.js"></script>
-    <script src="{{app_url}}/polymaps.editor.js"></script>
-    <script src="{{app_url}}/polymaps.viewer.js"></script>
-    <!-- -->
-    
-    <!-- temporary: allow quicker local development
-    <script src="../_attachments/d3.min.js"></script>
-    <script src="../_attachments/d3.geo.min.js"></script>
-    <script src="../_attachments/fermata.min.js"></script>
-    <script src="../_attachments/polymaps.min.js"></script>
-    <script src="../_attachments/polymaps.editor.js"></script>
-    <script src="../_attachments/polymaps.viewer.js"></script>
-    <!-- /temporary -->
+    <title>Metakaolin</title>
+    <script src="d3.min.js"></script>
+    <script src="d3.geo.min.js"></script>
+    <script src="fermata.min.js"></script>
+    <script src="polymaps.min.js"></script>
+    <script src="polymaps.editor.js"></script>
+    <script src="polymaps.viewer.js"></script>
     
     <style>
-        #map { position: absolute; top: 4em; bottom: 1em; left: 0; right: 0; padding: 0; margin: 0; }
-        
-        #shape_controls, .editing_shape #doc_controls { display: none; }
-        #doc_controls, .editing_shape #shape_controls { display: block; }
-        
-        .viewer { fill: grey; fill-opacity: 0.5; stroke: black; }
-        .viewer polyline { fill: none !important; stroke-width: 3px; }
-        .viewer .hover { fill-opacity: 0.25; stroke-opacity: 0.75; }
-        .viewer .color0 { fill: red; stroke: red; }
-        .viewer .color1 { fill: green; stroke: green; }
-        .viewer .color2 { fill: blue; stroke: blue; }
-        .viewer .editing { fill-opacity: 0.05; stroke-opacity: 0.1; }
     </style>
 </head>
 <body>
-    <form id="doc_controls" action="{{app_url}}/_update/content/{{id}}" method="POST">
-        <a href="{{app_url}}/_list/summary/by_moddate">←</a>
-        <!--<a href="{{app_url}}/_show/viewer/{{id}}">Cancel</a>-->
-        <!--<a href="{{app_url}}/_show/files/{{id}}">Files...</a>-->
-        <input name="title" placeholder="Document title" value="{{ title }}"></input>
-        <button class="save" disabled>Save</button><br>
-        <a href class="add">⫀ Add shape</a>
-        <textarea id="geojson_content" name="content" hidden>{{ content }}</textarea>
-    </form>
-    <div id="shape_controls">
-        <a href class="cancel">← Cancel</a>
-        <!--<a href>Fields...</a>-->
-        <button class="save" type="button">Done</button><br>
-        <a href class="delete">∉ Remove shape</a>
-    </div>
-    
     <div id="map"></div>
     
     <script>
@@ -86,7 +47,6 @@
             editor = po_metakaolin_editor();
         map.add(vector).add(editor);
         
-        d3.select(vector.container()).classed('viewer', true);
         vector.on('show', function (loadEvent) {
             loadEvent.features.forEach(function (f,i) {
                 //d3.select(f.element).on('dblclick', function () {
@@ -102,10 +62,9 @@
             });
         });
         
-        var geoJsonEl = d3.select("#geojson_content").node(),
-            featureCollection = (geoJsonEl.value) ? JSON.parse(geoJsonEl.value) : null;
+        var featureCollection = null;
         function updateFeatures() {
-            geoJsonEl.value = JSON.stringify(featureCollection);
+            //geoJsonEl.value = JSON.stringify(featureCollection);
             vector.features(featureCollection.features);
             d3.select('#doc_controls .save').property('disabled', false);
         }
@@ -139,21 +98,10 @@
         }, false);
         
         function addFeature() {
-            var geom = {type:"Polygon", coordinates:[[]]},
-                size = 0.00125,
+            var geom = {type:"Point", coordinates:[]},
                 center = map.center();
-            geom.coordinates[0].push([center.lon - size, center.lat + size]);
-            geom.coordinates[0].push([center.lon + size, center.lat + size]);
-            geom.coordinates[0].push([center.lon + size, center.lat - size]);
-            geom.coordinates[0].push([center.lon - size, center.lat - size]);
-            geom.coordinates[0].push([center.lon - size, center.lat + size]);
-            if (0) {
-                geom.type = (1) ? "LineString" : "MultiPoint";
-                geom.coordinates = geom.coordinates[0];
-                geom.coordinates.pop();
-            } else if (1) {
-                geom = {type:"GeometryCollection", geometries:[geom]};
-            }
+            geom.coordinates.push(center.lon);
+            geom.coordinates.push(center.lat);
             featureCollection.features.push({type:"Feature", properties:null, geometry:geom});
             updateFeatures();
             editGeometry(geom);
