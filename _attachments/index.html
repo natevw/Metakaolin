@@ -86,10 +86,6 @@
 <a class=add>+</a>
 </div>
 <script>
-d3.selectAll('a').on('click', function () {
-    d3.event.preventDefault();
-    alert("You clicked \""+ this.textContent + "\"");
-});
         var po = org.polymaps,
             map = po.map().container(d3.select('#map > svg').node());
         map.add(po.interact()).zoomRange([0,24]);
@@ -151,15 +147,9 @@ d3.selectAll('a').on('click', function () {
             map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
         });
         
-        d3.select('#doc_controls .add').on('click', function () {
+        d3.select('.add').on('click', function () {
             d3.event.preventDefault();
             addFeature();
-        });
-        d3.select('input[name=title]').on('change', function () {
-            d3.select('#doc_controls .save').property('disabled', false);
-        });
-        d3.select('#doc_controls').on('submit', function () {
-            d3.select('#doc_controls .save').property('disabled', true);
         });
         window.addEventListener('beforeunload', function () {
             if (d3.select('#doc_controls .save').property('disabled') === false) {
