@@ -29,17 +29,18 @@
         }
         #controls > * {
             display: block;
+            line-height: 44px;
             min-width: 44px;
             color: white;
             background: grey;
             text-align: center;
             margin: 0 1px;
+            padding: 0 5px;
         }
         #controls > :first-child { margin-left: 0; }
         #controls > :last-child { margin-right: 0; }
         #controls  .title {
             -webkit-box-flex: 1;
-            
         }
         #map {
             display: block;
@@ -54,7 +55,7 @@
         #map .add {
             display: block;
             position: absolute;
-            top: 5px; left: 5px;
+            top: 25px; left: 5px;
             text-align: center;
             line-height: 1em; font-family: "Courier New", "Courier", monospace; font-weight: bold;
             width: 1em; height: 1em;
@@ -64,20 +65,27 @@
             color: white;
             font-size: 44px;
         }
-        a { cursor: pointer; }
+        a {
+            -webkit-user-select: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 <div id=controls>
 <a>← All</a>
 <span class=title>This is the document title.</span>
-<a>More</a>
+<a>Edit…</a>
 </div>
 <div id=map>
 <svg></svg>                         <!-- wrapping SVG element lets default width/height *attribute* (vs. style?) work right across browsers -->
 <a class=add>+</a>
 </div>
 <script>
+d3.selectAll('a').on('click', function () {
+    d3.event.preventDefault();
+    alert("You clicked \""+ this.textContent + "\"");
+});
         var po = org.polymaps,
             map = po.map().container(d3.select('#map > svg').node());
         map.add(po.interact()).zoomRange([0,24]);
