@@ -51,6 +51,20 @@
         #map svg {
             width: 100%; height: 100%;
         }
+        #map .add {
+            display: block;
+            position: absolute;
+            top: 5px; left: 5px;
+            text-align: center;
+            line-height: 1em; font-family: "Courier New", "Courier", monospace; font-weight: bold;
+            width: 1em; height: 1em;
+            border-radius: 1em;
+            border: 2px solid white;
+            background: black;
+            color: white;
+            font-size: 44px;
+        }
+        a { cursor: pointer; }
     </style>
 </head>
 <body>
@@ -59,10 +73,13 @@
 <span class=title>This is the document title.</span>
 <a>More</a>
 </div>
-<div id=map></div>                  <!-- wrapping SVG element lets default width/height *attribute* (vs. style?) work right across browsers -->
+<div id=map>
+<svg></svg>                         <!-- wrapping SVG element lets default width/height *attribute* (vs. style?) work right across browsers -->
+<a class=add>+</a>
+</div>
 <script>
         var po = org.polymaps,
-            map = po.map().container(d3.select('#map').append('svg:svg').node());
+            map = po.map().container(d3.select('#map > svg').node());
         map.add(po.interact()).zoomRange([0,24]);
         
         // TODO: properly attribute whichever layer is used
