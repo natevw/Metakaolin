@@ -11,6 +11,9 @@
     <script src="d3.min.js"></script>
     <script src="d3.geo.min.js"></script>
     <script src="fermata.min.js"></script>
+    <script src="pouch.alpha.min.js"></script>
+    <script src="memcouch/memcouch.js"></script>
+    <script src="memcouch/memcouch.pouchdb.js"></script>
     <script src="polymaps.min.js"></script>
     <script src="polymaps.editor.js"></script>
     <script src="polymaps.viewer.js"></script>
@@ -60,10 +63,14 @@
             overflow: hidden;       /* not sure why necessary, but otherwise simply adding svg element causes 4px body overflow */
         }
         
-        .mainContent > .map {
+        .mainContent.listView {
+        
+        }
+        
+        .mainContent.mapView > .map {
             width: 100%; height: 100%;
         }
-        .mainContent > .add {
+        .mainContent.mapView > .add {
             display: block;
             position: absolute;
             top: 25px; left: 5px;
@@ -91,6 +98,7 @@ function stage(container) {
             content = root.append('div').classed('mainContent', true);
     
     stage.back = function (title, cb) {
+        backButton.style('display', (title) ? null : 'none');
         backButton.text("← " + title);
         backButton.on('click', cb);
         return stage;
@@ -107,8 +115,8 @@ function stage(container) {
         return stage;
     };
     
-    stage.scene = function (scene) {
-        scene(content.node());
+    stage.scene = function (scene, data) {
+        scene(content.node(), data);
         return stage;
     };
     
@@ -118,8 +126,31 @@ function stage(container) {
 
 var mainStage = stage(document.body);
 
-mainStage.back("All").title("Editing a layer").menu([]).scene(function (container) {
-    var root = d3.select(container).html(''),
+var model = memcouch.db();
+Pouch("idb://metakaolin", function (e,db) {
+    dbgDB = db;
+    memcouch.slaveToPouch(model, db);
+});
+
+mainStage.back(null).title("All maps").menu([]).scene(listView, [
+    {title: "Thing 1"}, {title: "Thing 2"}
+]);
+//mainStage.back("All").title("Editing a layer").menu([]).scene(mapView);
+
+
+function listView(container, data) {
+    var root = d3.select(container).html('').classed('listView', true),
+            list = root.append('ul').classed('maps', true),
+            addMap = root.append('a').classed('action', true).classed('addMap', true).text("Add map");
+    
+    var mapItems = list.selectAll('li').data(data);
+    mapItems.enter().append('li');
+    mapItems.text(function (d) { return d.title; });
+}
+
+
+function mapView(container, data) {
+    var root = d3.select(container).html('').classed('mapView', true),
             map = root.append('svg:svg'),
             addButton = root.append('a').classed('action', true).classed('add', true).text("+");
     
@@ -244,13 +275,7 @@ mainStage.back("All").title("Editing a layer").menu([]).scene(function (containe
             d3.event.preventDefault();
             deleteEdited();
         });    
-});
-
-
-
-throw up;
-
-
+}
         
         
 </script>
