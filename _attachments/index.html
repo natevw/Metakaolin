@@ -11,9 +11,9 @@
     <script src="d3.min.js"></script>
     <script src="d3.geo.min.js"></script>
     <script src="fermata.min.js"></script>
+    <script src="memcouch.js"></script>
+    <script src="memcouch.pouchdb.js"></script>
     <script src="pouch.alpha.min.js"></script>
-    <script src="memcouch/memcouch.js"></script>
-    <script src="memcouch/memcouch.pouchdb.js"></script>
     <script src="polymaps.min.js"></script>
     <script src="polymaps.editor.js"></script>
     <script src="polymaps.viewer.js"></script>
@@ -23,15 +23,17 @@
             margin: 0; padding: 0;
             width: 100%; height: 100%;
         }
+        html {
+            font-family: "Trebuchet MS", sans-serif;
+        }
         .menuBar {
             position: absolute;
             left: 0; right: 0;
             z-index: 1;
             height: 44px;
-            font-family: "Trebuchet MS", sans-serif;
-            display: -webkit-box;
-            -webkit-box-orient: horizontal;
-            -webkit-box-shadow: 0 1px 2px black;
+            display: -webkit-box; display: -moz-box;
+            -webkit-box-orient: horizontal; -moz-box-orient: horizontal;
+            -webkit-box-shadow: 0 1px 2px black; box-shadow: 0 1px 2px black;
             background: black;
         }
         .menuBar > * {
@@ -49,7 +51,13 @@
         .menuBar > .title {
             font-size: 100%;
             font-weight: normal;
-            -webkit-box-flex: 1;
+            -webkit-box-flex: 1; -moz-box-flex: 1;
+        }
+        a, a:visited {
+            color: darkblue;
+        }
+        a:hover {
+            color: blue;
         }
         a.action {
             -webkit-user-select: none;
@@ -60,13 +68,43 @@
             position: absolute;
             top: 44px; bottom: 0px;
             left: 0; right: 0;
-            overflow: hidden;       /* not sure why necessary, but otherwise simply adding svg element causes 4px body overflow */
         }
         
         .mainContent.listView {
-        
+            overflow: auto;
+        }
+        .mainContent.listView ul.maps {
+            padding-left: 0;
+        }
+        .mainContent.listView ul.maps > li {
+            list-style: none;
+            margin: 1em; padding: 1em;
+            border: 1px solid grey;
+            border-radius: 5px;
+            background: #eee;
+            color: black;
+        }
+        .mainContent.listView ul.maps > li.addMap {
+            text-align: center;
+            color: grey;
+        }
+        .mainContent.listView ul.maps > li > h2 {
+            margin: 0;
+            font-weight: normal;
+        }
+        .mainContent.listView ul.maps > li > span {
+            margin: 0;
+            font-size: 75%;
+            font-style: italic;
+        }
+        .mainContent.listView ul.maps > li > .delete {
+            color: darkred;
+            float: right;
         }
         
+        .mainContent.mapView {
+            overflow: hidden;       /* not sure why necessary, but otherwise simply adding svg element causes 4px body overflow */
+        }
         .mainContent.mapView > .map {
             width: 100%; height: 100%;
         }
@@ -97,6 +135,9 @@ function stage(container) {
                 menuButton = menuBar.append('a').classed('action', true).classed('menu', true).text("Edit…"),
             content = root.append('div').classed('mainContent', true);
     
+    // WORKAROUND: Firefox won't display [old-style] flexbox if positioned absolute http://stackoverflow.com/a/9163605/179583
+    if (~navigator.userAgent.indexOf('Firefox')) menuBar.style('position', "static").style('width', "100%");
+    
     stage.back = function (title, cb) {
         backButton.style('display', (title) ? null : 'none');
         backButton.text("← " + title);
@@ -115,8 +156,10 @@ function stage(container) {
         return stage;
     };
     
+    var prevScene;
     stage.scene = function (scene, data) {
-        scene(content.node(), data);
+        if (prevScene && prevScene.close) prevScene.close();
+        prevScene = scene(content.node(), data);
         return stage;
     };
     
@@ -128,28 +171,93 @@ var mainStage = stage(document.body);
 
 var model = memcouch.db();
 Pouch("idb://metakaolin", function (e,db) {
+    if (e) throw e;
     dbgDB = db;
     memcouch.slaveToPouch(model, db);
+    if (location.protocol !== 'file:') {
+        var ddocIdx = location.href.indexOf("/_design/"),
+            ddocName = location.href.slice(ddocIdx).split('/')[2],
+            dbURL = (~ddocIdx) ? location.href.slice(0, ddocIdx) : "";     // if no ddoc in URL, just try root I guess?
+        // NOTE: be careful enabling these, they don't back off on error (and once working, filtered rep can burn CPU/timeout on fresh clone too!)
+        //Pouch.replicate(dbURL, db, {continuous:true, filter:ddocName+"/geodocs"});
+        //Pouch.replicate(db, dbURL, {continuous:true, filter:ddocName+"/geodocs"});
+    }
 });
 
-mainStage.back(null).title("All maps").menu([]).scene(listView, [
-    {title: "Thing 1"}, {title: "Thing 2"}
-]);
-//mainStage.back("All").title("Editing a layer").menu([]).scene(mapView);
+function openDocument(doc, replaceState) {
+    var modifyState = (replaceState) ? history.replaceState : history.pushState;
+    if (!doc) {
+        modifyState.call(history, null, "Metakaolin", location.pathname);
+        mainStage.back(null).title("All maps").menu([]).scene(listView);
+    } else {
+        modifyState.call(history, doc, "Metakaolin — " + doc.title, "#" + doc._id);
+        mainStage.back("All", function () { openDocument(null); }).title(doc.title).menu([]).scene(mapView, doc);
+    }
+}
+window.addEventListener('load', function(e) {
+    openDocument(history.state, 'nopush');
+});
+window.addEventListener('popstate', function(e) {
+    openDocument(e.state, 'nopush');
+}, false);
 
 
-function listView(container, data) {
+function listView(container) {
     var root = d3.select(container).html('').classed('listView', true),
             list = root.append('ul').classed('maps', true),
-            addMap = root.append('a').classed('action', true).classed('addMap', true).text("Add map");
+                addMap = list.append('li').classed('addMap', true).append('h2').append('a').classed('action', true).text("New map…");
     
-    var mapItems = list.selectAll('li').data(data);
-    mapItems.enter().append('li');
-    mapItems.text(function (d) { return d.title; });
+    addMap.attr('href', "#").on('click', function () {
+        d3.event.preventDefault();
+        var doc = {
+            'com.stemstorage.geodoc':true,
+            _id: 'geodoc-' + memcouch.id(),
+            content: {type:"FeatureCollection", features:[]},
+            created: new Date().toISOString(),
+            title: "Untitled map"
+        };
+        doc.last_modified = new Date().toISOString();
+        model.put(doc);
+        openDocument(doc);
+    });
+    
+    function updateList() {
+        var data = model.query(function (doc) {
+            if (doc['com.stemstorage.geodoc']) this.emit(doc.last_modified);
+        }, true).map(function (row) { return row.doc; }).reverse();
+        
+        var mapItems = list.selectAll('li:not(.addMap)').data(data, function (d) { return d._id; }),
+            mapItemsEnter = mapItems.enter().insert('li', ".addMap");
+        mapItemsEnter.append('h2').append('a');
+        mapItemsEnter.append('span');
+        mapItemsEnter.append('a').classed('action', true).classed('delete', true).text("Delete?");
+        mapItems.select('h2 > a').text(function (d) { return d.title; }).attr('href', function (d) { return "#" + d._id; }).on('click', function (d) {
+            d3.event.preventDefault();
+            openDocument(d);
+        });
+        mapItems.select('span').text(function (d) { return d.last_modified; });
+        mapItemsEnter.select('.delete').on('click', function (d) {
+            var really = confirm("This document will be almost permanently deleted.");
+            if (!really) return;
+            model.del(d._id);
+            
+        });
+        mapItems.exit().remove();
+    }
+    model.watch(updateList);
+    updateList();
+    
+    var view = {};
+    view.close = function () {
+        root.classed('listView', false);
+        model.clear(updateList);
+    };
+    return view;
 }
 
 
-function mapView(container, data) {
+
+function mapView(container, doc) {
     var root = d3.select(container).html('').classed('mapView', true),
             map = root.append('svg:svg'),
             addButton = root.append('a').classed('action', true).classed('add', true).text("+");
@@ -195,16 +303,13 @@ function mapView(container, data) {
         });
     });
     
-    var featureCollection = null;
+    var featureCollection = doc.content;
     function updateFeatures() {
         //geoJsonEl.value = JSON.stringify(featureCollection);
         vector.features(featureCollection.features);
         d3.select('#doc_controls .save').property('disabled', false);
     }
-    if (!featureCollection) {
-        featureCollection = {type:"FeatureCollection", features:[]};
-        updateFeatures();
-    }
+    updateFeatures();
     
     if (featureCollection.features.length) {
         var bounds = d3.geo.bounds(featureCollection).map(function (c) { return {lon:c[0], lat:c[1]}; });
@@ -236,6 +341,7 @@ function mapView(container, data) {
     
     var editingGeometry = null;
     function editGeometry(geom) {
+        mainStage.back("Done", saveEdits).title("Editing shape");
         d3.select(document.body).classed('editing_shape', true);
         editor.geometry(editingGeometry = geom);
         vector.reshow();
@@ -259,6 +365,8 @@ function mapView(container, data) {
         finishEditing();
     }
     function finishEditing() {
+        // TODO: give stage a push/pop paradigm for less copy pasta like this
+        mainStage.back("All", function () { openDocument(null); }).title(doc.title).menu([]).scene(mapView, doc);
         editor.geometry(editingGeometry = null);
         vector.reshow();
         d3.select(document.body).classed('editing_shape', false);
@@ -275,9 +383,13 @@ function mapView(container, data) {
         d3.event.preventDefault();
         deleteEdited();
     });
+    
+    var view = {};
+    view.close = function () {
+        root.classed('mapView', false);
+    };
+    return view;
 }
-        
-        
 </script>
 </body>
 </html>
