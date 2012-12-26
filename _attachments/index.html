@@ -155,126 +155,126 @@ function mapView(container, data) {
             addButton = root.append('a').classed('action', true).classed('add', true).text("+");
     
     var po = org.polymaps,
-            map = po.map().container(map.node());
-        map.add(po.interact()).zoomRange([0,24]);
-            // TODO: properly attribute whichever layer is used
-        var tiles = po.image().on('load', function (e) {
-            // https://github.com/simplegeo/polymaps/issues/36
-            e.tile.element.width.baseVal.value += 1;
-            e.tile.element.height.baseVal.value += 1;
-        }).zoom(function(z) { return Math.max(0, Math.min(18, z)); });
-        if (1) tiles.url(po.url("http://temp{S}.argyl.es/preview-key/{Z}/{X}/{Y}.jpg")
-            .hosts([1, 2, 3]));
-        else if (0) tiles.url(po.url("http://oatile{S}.mqcdn.com/naip"
-            + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3, 4]));
-        else if (0) tiles.url(po.url("http://{S}tile.cloudmade.com"
-            + "/51664f123b50414da85e963f92c721f0"
-            + "/998/256/{Z}/{X}/{Y}.png")
-            .hosts(["a.", "b.", "c.", ""]));
-        else tiles.url(po.url("http://{S}tile.openstreetmap.org/{Z}/{X}/{Y}.png")
-            .hosts(["a.", "b.", "c.", ""]));
-        map.add(tiles);
-        
-        
-        var vector = po_metakaolin_viewer(),
-            editor = po_metakaolin_editor();
-        map.add(vector).add(editor);
-        
-        vector.on('show', function (loadEvent) {
-            loadEvent.features.forEach(function (f,i) {
-                //d3.select(f.element).on('dblclick', function () {
-                d3.select(f.element).on('click', function () {
-                    d3.event.stopPropagation();
-                    d3.event.preventDefault();
-                    editGeometry(f.data.geometry);
-                }).on("mouseover", function () {
-                    d3.select(this).classed('hover', true);
-                }).on("mouseout", function () {
-                    d3.select(this).classed('hover', false);
-                }).classed('color' + (i % 3), true).classed('editing', f.data.geometry === editingGeometry);
-            });
+        map = po.map().container(map.node());
+    map.add(po.interact()).zoomRange([0,24]);
+        // TODO: properly attribute whichever layer is used
+    var tiles = po.image().on('load', function (e) {
+        // https://github.com/simplegeo/polymaps/issues/36
+        e.tile.element.width.baseVal.value += 1;
+        e.tile.element.height.baseVal.value += 1;
+    }).zoom(function(z) { return Math.max(0, Math.min(18, z)); });
+    if (1) tiles.url(po.url("http://temp{S}.argyl.es/preview-key/{Z}/{X}/{Y}.jpg")
+        .hosts([1, 2, 3]));
+    else if (0) tiles.url(po.url("http://oatile{S}.mqcdn.com/naip"
+        + "/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3, 4]));
+    else if (0) tiles.url(po.url("http://{S}tile.cloudmade.com"
+        + "/51664f123b50414da85e963f92c721f0"
+        + "/998/256/{Z}/{X}/{Y}.png")
+        .hosts(["a.", "b.", "c.", ""]));
+    else tiles.url(po.url("http://{S}tile.openstreetmap.org/{Z}/{X}/{Y}.png")
+        .hosts(["a.", "b.", "c.", ""]));
+    map.add(tiles);
+    
+    
+    var vector = po_metakaolin_viewer(),
+        editor = po_metakaolin_editor();
+    map.add(vector).add(editor);
+    
+    vector.on('show', function (loadEvent) {
+        loadEvent.features.forEach(function (f,i) {
+            //d3.select(f.element).on('dblclick', function () {
+            d3.select(f.element).on('click', function () {
+                d3.event.stopPropagation();
+                d3.event.preventDefault();
+                editGeometry(f.data.geometry);
+            }).on("mouseover", function () {
+                d3.select(this).classed('hover', true);
+            }).on("mouseout", function () {
+                d3.select(this).classed('hover', false);
+            }).classed('color' + (i % 3), true).classed('editing', f.data.geometry === editingGeometry);
         });
-        
-        var featureCollection = null;
-        function updateFeatures() {
-            //geoJsonEl.value = JSON.stringify(featureCollection);
-            vector.features(featureCollection.features);
-            d3.select('#doc_controls .save').property('disabled', false);
+    });
+    
+    var featureCollection = null;
+    function updateFeatures() {
+        //geoJsonEl.value = JSON.stringify(featureCollection);
+        vector.features(featureCollection.features);
+        d3.select('#doc_controls .save').property('disabled', false);
+    }
+    if (!featureCollection) {
+        featureCollection = {type:"FeatureCollection", features:[]};
+        updateFeatures();
+    }
+    
+    if (featureCollection.features.length) {
+        var bounds = d3.geo.bounds(featureCollection).map(function (c) { return {lon:c[0], lat:c[1]}; });
+        vector.features(featureCollection.features);
+        map.extent(bounds).zoomBy(-0.25);
+    } else if (0 && navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
+        map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
+    });
+    
+    d3.select('.add').on('click', function () {
+        d3.event.preventDefault();
+        addFeature();
+    });
+    window.addEventListener('beforeunload', function () {
+        if (d3.select('#doc_controls .save').property('disabled') === false) {
+            return 'You have unsaved changes that will be lost.';
         }
-        if (!featureCollection) {
-            featureCollection = {type:"FeatureCollection", features:[]};
-            updateFeatures();
-        }
-        
-        if (featureCollection.features.length) {
-            var bounds = d3.geo.bounds(featureCollection).map(function (c) { return {lon:c[0], lat:c[1]}; });
-            vector.features(featureCollection.features);
-            map.extent(bounds).zoomBy(-0.25);
-        } else if (0 && navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
-            map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
+    }, false);
+    
+    function addFeature() {
+        var geom = {type:"Point", coordinates:[]},
+            center = map.center();
+        geom.coordinates.push(center.lon);
+        geom.coordinates.push(center.lat);
+        featureCollection.features.push({type:"Feature", properties:null, geometry:geom});
+        updateFeatures();
+        editGeometry(geom);
+    }
+    
+    var editingGeometry = null;
+    function editGeometry(geom) {
+        d3.select(document.body).classed('editing_shape', true);
+        editor.geometry(editingGeometry = geom);
+        vector.reshow();
+    }
+    function saveEdits() {
+        var newGeometry = editor.geometry();
+        Object.keys(newGeometry).forEach(function (key) {
+            editingGeometry[key] = newGeometry[key];
+            if (key === "geometries") delete editingGeometry["coordinates"];
+            if (key === "coordinates") delete editingGeometry["geometries"];
         });
-        
-        d3.select('.add').on('click', function () {
-            d3.event.preventDefault();
-            addFeature();
-        });
-        window.addEventListener('beforeunload', function () {
-            if (d3.select('#doc_controls .save').property('disabled') === false) {
-                return 'You have unsaved changes that will be lost.';
-            }
-        }, false);
-        
-        function addFeature() {
-            var geom = {type:"Point", coordinates:[]},
-                center = map.center();
-            geom.coordinates.push(center.lon);
-            geom.coordinates.push(center.lat);
-            featureCollection.features.push({type:"Feature", properties:null, geometry:geom});
-            updateFeatures();
-            editGeometry(geom);
-        }
-        
-        var editingGeometry = null;
-        function editGeometry(geom) {
-            d3.select(document.body).classed('editing_shape', true);
-            editor.geometry(editingGeometry = geom);
-            vector.reshow();
-        }
-        function saveEdits() {
-            var newGeometry = editor.geometry();
-            Object.keys(newGeometry).forEach(function (key) {
-                editingGeometry[key] = newGeometry[key];
-                if (key === "geometries") delete editingGeometry["coordinates"];
-                if (key === "coordinates") delete editingGeometry["geometries"];
-            });
-            updateFeatures();
-            finishEditing();
-        }
-        function deleteEdited() {
-            var removedFeature = featureCollection.features.filter(function (f) { return f.geometry === editingGeometry; })[0];
-            console.log(featureCollection.features.length);
-            featureCollection.features = featureCollection.features.filter(function (f) { return f !== removedFeature; });
-            console.log(featureCollection.features.length);
-            updateFeatures();
-            finishEditing();
-        }
-        function finishEditing() {
-            editor.geometry(editingGeometry = null);
-            vector.reshow();
-            d3.select(document.body).classed('editing_shape', false);
-        }
-        d3.select('#shape_controls .cancel').on('click', function () {
-            d3.event.preventDefault();
-            finishEditing();
-        });
-        d3.select('#shape_controls .save').on('click', function () {
-            d3.event.preventDefault();
-            saveEdits();
-        });
-        d3.select('#shape_controls .delete').on('click', function () {
-            d3.event.preventDefault();
-            deleteEdited();
-        });    
+        updateFeatures();
+        finishEditing();
+    }
+    function deleteEdited() {
+        var removedFeature = featureCollection.features.filter(function (f) { return f.geometry === editingGeometry; })[0];
+        console.log(featureCollection.features.length);
+        featureCollection.features = featureCollection.features.filter(function (f) { return f !== removedFeature; });
+        console.log(featureCollection.features.length);
+        updateFeatures();
+        finishEditing();
+    }
+    function finishEditing() {
+        editor.geometry(editingGeometry = null);
+        vector.reshow();
+        d3.select(document.body).classed('editing_shape', false);
+    }
+    d3.select('#shape_controls .cancel').on('click', function () {
+        d3.event.preventDefault();
+        finishEditing();
+    });
+    d3.select('#shape_controls .save').on('click', function () {
+        d3.event.preventDefault();
+        saveEdits();
+    });
+    d3.select('#shape_controls .delete').on('click', function () {
+        d3.event.preventDefault();
+        deleteEdited();
+    });
 }
         
         
