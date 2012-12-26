@@ -178,9 +178,9 @@ Pouch("idb://metakaolin", function (e,db) {
         var ddocIdx = location.href.indexOf("/_design/"),
             ddocName = location.href.slice(ddocIdx).split('/')[2],
             dbURL = (~ddocIdx) ? location.href.slice(0, ddocIdx) : "";     // if no ddoc in URL, just try root I guess?
-        // NOTE: be careful enabling these, they don't back off on error (and once working, filtered rep can burn CPU/timeout on fresh clone too!)
+        // NOTE: be careful enabling these, filtered rep is trouble atm: https://github.com/daleharvey/pouchdb/issues/303
         //Pouch.replicate(dbURL, db, {continuous:true, filter:ddocName+"/geodocs"});
-        //Pouch.replicate(db, dbURL, {continuous:true, filter:ddocName+"/geodocs"});
+        //Pouch.replicate(db, dbURL, {continuous:true});
     }
 });
 
