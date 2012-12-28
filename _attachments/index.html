@@ -227,8 +227,9 @@ function listView(container) {
     
     function openDocument(doc) {
         mainStage.push(function () {
-            this.scene("Features", mapView, doc);
-            this.title(doc.title);
+            var ctx = {doc:doc};
+            this.scene("Features", mapView, ctx);
+            this.title(doc.title, "Zoom to fit", ctx.zoomToDoc);
         });
     }
     
@@ -279,7 +280,7 @@ function listView(container) {
     };
 }
 
-function mapView(container, doc) {
+function mapView(container, ctx) {
     var root = d3.select(container).html('').classed('mapView', true),
             map = root.append('svg:svg'),
             addButton = root.append('a').classed('action', true).classed('add', true).text("+");
@@ -306,7 +307,8 @@ function mapView(container, doc) {
         .hosts(["a.", "b.", "c.", ""]));
     map.add(tiles);
     
-    var vector = po_metakaolin_viewer(),
+    var doc = ctx.doc,
+        vector = po_metakaolin_viewer(),
         editor = po_metakaolin_editor();
     vector.on('show', function (loadEvent) {
         if (loadEvent.features) loadEvent.features.forEach(function (f,i) {
@@ -353,6 +355,8 @@ function mapView(container, doc) {
     }
     zoomToDoc();
     
+    ctx.zoomToDoc = zoomToDoc;
+    
     function addFeature() {
         var feat = {type:"Feature", properties:null},
             geom = {type:"Point", coordinates:[]},
@@ -366,7 +370,7 @@ function mapView(container, doc) {
     
     function editFeature(feature) {
         function zoomToFeature() {
-            var bounds = zoomableBounds(doc.content);
+            var bounds = zoomableBounds(feature);
             map.extent(bounds).zoomBy(-0.25);
         }
         mainStage.push(function () {
