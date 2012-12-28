@@ -138,36 +138,69 @@ function stage(container) {
     // WORKAROUND: Firefox won't display [old-style] flexbox if positioned absolute http://stackoverflow.com/a/9163605/179583
     if (~navigator.userAgent.indexOf('Firefox')) menuBar.style('position', "static").style('width', "100%");
     
-    stage.back = function (title, cb) {
-        backButton.style('display', (title) ? null : 'none');
-        backButton.text("← " + title);
-        backButton.on('click', cb);
-        return stage;
-    };
+    /*
+    mainStage.push(function () {
+        this.scene("Shapes", function (container) {
+            // set up main view
+            return function () {
+                // tear down main view
+            };
+        })
+        this.title(doc.title, "Zoom to extent", function () {
+        
+        })
+        this.extra("Options", "View layer options", function () {
+            
+        });
+    });
+    */
     
-    stage.title = function (title, cb) {
-        mainTitle.text(title);
-        mainTitle.on('click', cb);
-        return stage;
+    var scenes = [],
+        exitPreviousView;
+    function activate(scene, prev) {
+        var backTitle = "Back", backTooltip = "Return to previous";
+        var modifiers = {
+            back: function (title, tip, action) {
+                if (title) backButton.style('display', null).text("← " + title).attr('title', tip).on('click', action);
+                else backButton.style('display', "none");
+            },
+            scene: function (nickname, view, data) {
+                backTitle = nickname;
+                if (exitPreviousView) exitPreviousView();
+                exitPreviousView = view(content.node(), data);
+            },
+            title: function (title, tip, action) {
+                backTooltip = "Return to " + title;
+                mainTitle.text(title).attr('title', tip || null).on('click', action || null);
+            },
+            extra: function (title, tip, activate) {
+                if (title) menuButton.style('display', null).text(title).attr('title', tip).on('click', activate);
+                else menuButton.style('display', "none");
+            }
+        };
+        modifiers.back(prev.title, prev.tooltip, stage.pop);
+        modifiers.scene("Back", function () {});
+        modifiers.title("Return to previous");
+        modifiers.extra(null);
+        scene.call(modifiers);
+        return {title:backTitle, tooltip:backTooltip};
+    }
+    stage.push = function (scene) {
+        var prev = scenes[scenes.length - 1],
+            sceneInfo = activate(scene, prev || {});
+        sceneInfo.scene = scene;
+        scenes.push(sceneInfo);
     };
-    
-    stage.menu = function (items) {
-        // TODO: implement
-        return stage;
+    stage.pop = function () {
+        scenes.pop();
+        var scene = scenes[scenes.length - 1].scene,
+            prev = scenes[scenes.length - 2],
+            sceneInfo = activate(scene, prev || {});
+        scenes.push(sceneInfo);
     };
-    
-    var prevScene;
-    stage.scene = function (scene, data) {
-        if (prevScene && prevScene.close) prevScene.close();
-        prevScene = scene(content.node(), data);
-        return stage;
-    };
-    
     return stage;
 };
 
-
-var mainStage = stage(document.body);
 
 var model = memcouch.db();
 Pouch("idb://metakaolin", function (e,db) {
@@ -184,28 +217,23 @@ Pouch("idb://metakaolin", function (e,db) {
     }
 });
 
-function openDocument(doc, replaceState) {
-    var modifyState = (replaceState) ? history.replaceState : history.pushState;
-    if (!doc) {
-        modifyState.call(history, null, "Metakaolin", location.pathname);
-        mainStage.back(null).title("All maps").menu([]).scene(listView);
-    } else {
-        modifyState.call(history, doc, "Metakaolin — " + doc.title, "#" + doc._id);
-        mainStage.back("All", function () { openDocument(null); }).title(doc.title).menu([]).scene(mapView, doc);
-    }
-}
-window.addEventListener('load', function(e) {
-    openDocument(history.state, 'nopush');
+var mainStage = stage(document.body);
+mainStage.push(function () {
+    this.scene("Maps", listView);
+    this.title("All maps");
 });
-window.addEventListener('popstate', function(e) {
-    openDocument(e.state, 'nopush');
-}, false);
-
 
 function listView(container) {
     var root = d3.select(container).html('').classed('listView', true),
             list = root.append('ul').classed('maps', true),
                 addMap = list.append('li').classed('addMap', true).append('h2').append('a').classed('action', true).text("New map…");
+    
+    function openDocument(doc) {
+        mainStage.push(function () {
+            this.scene("Features", mapView, doc);
+            this.title(doc.title);
+        });
+    }
     
     addMap.attr('href', "#").on('click', function () {
         d3.event.preventDefault();
@@ -247,15 +275,11 @@ function listView(container) {
     model.watch(updateList);
     updateList();
     
-    var view = {};
-    view.close = function () {
+    return function () {
         root.classed('listView', false);
         model.clear(updateList);
     };
-    return view;
 }
-
-
 
 function mapView(container, doc) {
     var root = d3.select(container).html('').classed('mapView', true),
@@ -365,8 +389,8 @@ function mapView(container, doc) {
         finishEditing();
     }
     function finishEditing() {
-        // TODO: give stage a push/pop paradigm for less copy pasta like this
-        mainStage.back("All", function () { openDocument(null); }).title(doc.title).menu([]).scene(mapView, doc);
+        // TODO: this should simply be cleanup function on shapeView
+        mainStage.pop();
         editor.geometry(editingGeometry = null);
         vector.reshow();
         d3.select(document.body).classed('editing_shape', false);
@@ -384,11 +408,9 @@ function mapView(container, doc) {
         deleteEdited();
     });
     
-    var view = {};
-    view.close = function () {
+    return function () {
         root.classed('mapView', false);
     };
-    return view;
 }
 </script>
 </body>
