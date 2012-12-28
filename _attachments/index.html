@@ -347,29 +347,44 @@ function mapView(container, doc) {
         addFeature();
     });
     
+    function zoomableBounds(feature) {
+        var bounds = d3.geo.bounds(feature).map(function (c) { return {lon:c[0], lat:c[1]}; }),
+            MIN_DIFF = 0.0005;
+        if ((bounds[1].lat - bounds[0].lat) < MIN_DIFF) {
+            bounds[0].lat -= MIN_DIFF / 2;
+            bounds[1].lat += MIN_DIFF / 2;
+        }
+        if ((bounds[1].lon - bounds[0].lon) < MIN_DIFF) {
+            bounds[0].lon -= MIN_DIFF / 2;
+            bounds[1].lon += MIN_DIFF / 2;
+        }
+        return bounds;
+    }
+    
     function zoomToDoc() {
         if (!doc.content.features.length) {
             map.extent(DEFAULT_BOUNDS);
             return;
         }
-        var bounds = d3.geo.bounds(doc.content).map(function (c) { return {lon:c[0], lat:c[1]}; });
+        var bounds = zoomableBounds(doc.content);
         map.extent(bounds).zoomBy(-0.25);
     }
     zoomToDoc();
     
     function addFeature() {
-        var geom = {type:"Point", coordinates:[]},
+        var feat = {type:"Feature", properties:null},
+            geom = {type:"Point", coordinates:[]},
             center = map.center();
         geom.coordinates.push(center.lon);
         geom.coordinates.push(center.lat);
-        featureCollection.features.push({type:"Feature", properties:null, geometry:geom});
-        updateFeatures();
-        editGeometry(geom);
+        feat.geometry = geom;
+        doc.content.features.push(feat);
+        editFeature(feat);
     }
     
     function editFeature(feature) {
         function zoomToFeature() {
-            var bounds = d3.geo.bounds(feature).map(function (c) { return {lon:c[0], lat:c[1]}; });
+            var bounds = zoomableBounds(doc.content);
             map.extent(bounds).zoomBy(-0.25);
         }
         mainStage.push(function () {
