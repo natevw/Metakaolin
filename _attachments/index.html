@@ -121,6 +121,15 @@
             color: white;
             font-size: 44px;
         }
+        
+        .viewer { fill: grey; fill-opacity: 0.5; stroke: black; }
+        .viewer polyline { fill: none !important; stroke-width: 3px; }
+        .viewer .hover { fill-opacity: 0.25; stroke-opacity: 0.75; }
+        .viewer .color0 { fill: red; stroke: red; }
+        .viewer .color1 { fill: green; stroke: green; }
+        .viewer .color2 { fill: blue; stroke: blue; }
+        .mainContent.mapView.editing .viewer { opacity: 0.1; }
+        .mainContent.mapView.editing .viewer .hover { fill-opacity: inherit; stroke-opacity: inherit; }
     </style>
 </head>
 <body>
@@ -329,6 +338,7 @@ function mapView(container, doc) {
             }).classed('color' + (i % 3), true);
         });
     }).features(doc.content.features);
+    d3.select(vector.container()).classed('viewer', true);
     map.add(vector).add(editor);
     
     addButton.on('click', function () {
@@ -372,7 +382,7 @@ function mapView(container, doc) {
 
 
 function shapeView(container, ctx) {
-    var root = d3.select(container)/*.html('')*/.classed('mapView', true);      // assume container is shared and just use existing map
+    var root = d3.select(container)/*.html('')*/.classed('mapView', true).classed('editing', true);      // assume container is shared and just use existing map
     
     ctx.layer.geometry(ctx.geometry);
     
@@ -386,7 +396,7 @@ function shapeView(container, ctx) {
             if (key === "coordinates") delete editingGeometry["geometries"];
         });
         editor.geometry(null);
-        root.classed('mapView', false);
+        root.classed('editing', false).classed('mapView', false);
     }
 }
 
