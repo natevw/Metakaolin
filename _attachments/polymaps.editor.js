@@ -280,7 +280,9 @@ var po_metakaolin_editor = function () {
                             document.elementFromPoint(ptr.pageX, ptr.pageY) :
                             document.elementFromPoint(ptr.screenX, ptr.screenY);
                         
-                        if (targetEl.parentNode === nodesLayer) {
+                        if (!targetEl) {
+                            // ignore, mouse likely outside window or similar
+                        } else if (targetEl.parentNode === nodesLayer) {
                             targetNode = targetEl._graph_node;
                         } else if (targetEl.parentNode === connectionsLayer) {
                             targetConnection = targetEl._graph_connecion;
