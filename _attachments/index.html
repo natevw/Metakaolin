@@ -9,7 +9,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <script src="d3.min.js"></script>
-    <script src="d3.geo.min.js"></script>
     <script src="fermata.min.js"></script>
     <script src="memcouch.js"></script>
     <script src="memcouch.pouchdb.js"></script>
@@ -269,7 +268,7 @@ function listView(container) {
             
         });
         mapItems.exit().remove();
-        //mapItems.order();
+        mapItems.order();
     }
     model.watch(updateList);
     updateList();
