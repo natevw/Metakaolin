@@ -196,7 +196,8 @@ function stage(container) {
         var scene = scenes[scenes.length - 1].scene,
             prev = scenes[scenes.length - 2],
             sceneInfo = activate(scene, prev || {});
-        scenes.push(sceneInfo);
+        sceneInfo.scene = scene;
+        scenes[scenes.length - 1] = sceneInfo;
     };
     return stage;
 };
