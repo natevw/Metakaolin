@@ -213,24 +213,6 @@ function stage(container) {
 
 
 var model = memcouch.db();
-Pouch("idb://metakaolin", function (e,db) {
-    if (e) throw e;
-    dbgDB = db;
-    
-    var status = memcouch.slaveToPouch(model, db);
-    window.addEventListener('beforeunload', function () {
-        if (status.changesPending) return (e.returnValue = "Not all of your changes have been saved to disk yet, please wait!");
-    }, false);
-    
-    // TODO: move this to visible, app-level configuration when integrating back into CouchDB
-    if (0 && location.protocol !== 'file:') {
-        var ddocIdx = location.href.indexOf("/_design/"),
-            ddocName = location.href.slice(ddocIdx).split('/')[2],
-            dbURL = (~ddocIdx) ? location.href.slice(0, ddocIdx) : "";     // if no ddoc in URL, just try root I guess?
-        Pouch.replicate(dbURL, db, {continuous:false, filter:ddocName+"/geodocs"});
-        Pouch.replicate(db, dbURL, {continuous:true});
-    }
-});
 
 var mainStage = stage(document.body);
 mainStage.push(function () {
@@ -419,6 +401,25 @@ function shapeView(container, ctx) {
         root.classed('editing', false).classed('mapView', false);
     }
 }
+
+Pouch("idb://metakaolin", function (e,db) {
+    if (e) throw e;
+    dbgDB = db;
+    
+    var status = memcouch.slaveToPouch(model, db);
+    window.addEventListener('beforeunload', function () {
+        if (status.changesPending) return (e.returnValue = "Not all of your changes have been saved to disk yet, please wait!");
+    }, false);
+    
+    // TODO: move this to visible, app-level configuration when integrating back into CouchDB
+    if (0 && location.protocol !== 'file:') {
+        var ddocIdx = location.href.indexOf("/_design/"),
+            ddocName = location.href.slice(ddocIdx).split('/')[2],
+            dbURL = (~ddocIdx) ? location.href.slice(0, ddocIdx) : "";     // if no ddoc in URL, just try root I guess?
+        Pouch.replicate(dbURL, db, {continuous:false, filter:ddocName+"/geodocs"});
+        Pouch.replicate(db, dbURL, {continuous:true});
+    }
+});
 
 </script>
 </body>
