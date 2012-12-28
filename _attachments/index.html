@@ -303,7 +303,8 @@ function mapView(container, doc) {
             addButton = root.append('a').classed('action', true).classed('add', true).text("+");
     
     var po = org.polymaps,
-        map = po.map().container(map.node());
+        map = po.map().container(map.node()),
+        DEFAULT_BOUNDS = [{"lon":-119.55479507338985,"lat":46.04672743284027},{"lon":-118.709894726065,"lat":46.3892651319496}];
     map.add(po.interact()).zoomRange([0,24]);
         // TODO: properly attribute whichever layer is used
     var tiles = po.image().on('load', function (e) {
@@ -347,6 +348,10 @@ function mapView(container, doc) {
     });
     
     function zoomToDoc() {
+        if (!doc.content.features.length) {
+            map.extent(DEFAULT_BOUNDS);
+            return;
+        }
         var bounds = d3.geo.bounds(doc.content).map(function (c) { return {lon:c[0], lat:c[1]}; });
         map.extent(bounds).zoomBy(-0.25);
     }
