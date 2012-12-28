@@ -277,6 +277,7 @@ function listView(container) {
             
         });
         mapItems.exit().remove();
+        //mapItems.order();
     }
     model.watch(updateList);
     updateList();
@@ -364,6 +365,7 @@ function mapView(container, doc) {
     }
     
     return function () {
+        model.put(doc);
         root.classed('mapView', false);
     };
 }
