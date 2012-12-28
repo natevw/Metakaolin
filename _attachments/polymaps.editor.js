@@ -31,7 +31,7 @@ var po_metakaolin_editor = function () {
     var po = org.polymaps,
         DOUBLE_CLICK_MSEC = 300,
         MAX_CONNECTIONS = 2,        // prevent full-fledged node networks from springing up
-        MARKER_RADIUS = (window.TouchEvent) ? 50 : 5,
+        MARKER_RADIUS = (window.TouchEvent) ? 25 : 5,
         HIGHLIGHT_WIDTH = 2,
         CONNECTION_WIDTH = (window.TouchEvent) ? 15 : 5;
     
