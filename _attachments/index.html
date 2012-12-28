@@ -207,7 +207,12 @@ var model = memcouch.db();
 Pouch("idb://metakaolin", function (e,db) {
     if (e) throw e;
     dbgDB = db;
-    memcouch.slaveToPouch(model, db);
+    
+    var status = memcouch.slaveToPouch(model, db);
+    window.addEventListener('beforeunload', function () {
+        if (status.changesPending) return (e.returnValue = "Not all of your changes have been saved to disk yet, please wait!");
+    }, false);
+    
     // TODO: move this to visible, app-level configuration when integrating back into CouchDB
     if (0 && location.protocol !== 'file:') {
         var ddocIdx = location.href.indexOf("/_design/"),
@@ -308,51 +313,33 @@ function mapView(container, doc) {
         .hosts(["a.", "b.", "c.", ""]));
     map.add(tiles);
     
-    
     var vector = po_metakaolin_viewer(),
         editor = po_metakaolin_editor();
-    map.add(vector).add(editor);
-    
     vector.on('show', function (loadEvent) {
-        loadEvent.features.forEach(function (f,i) {
-            //d3.select(f.element).on('dblclick', function () {
+        if (loadEvent.features) loadEvent.features.forEach(function (f,i) {
             d3.select(f.element).on('click', function () {
                 d3.event.stopPropagation();
                 d3.event.preventDefault();
-                editGeometry(f.data.geometry);
+                editFeature(f.data);
             }).on("mouseover", function () {
                 d3.select(this).classed('hover', true);
             }).on("mouseout", function () {
                 d3.select(this).classed('hover', false);
-            }).classed('color' + (i % 3), true).classed('editing', f.data.geometry === editingGeometry);
+            }).classed('color' + (i % 3), true);
         });
-    });
+    }).features(doc.content.features);
+    map.add(vector).add(editor);
     
-    var featureCollection = doc.content;
-    function updateFeatures() {
-        //geoJsonEl.value = JSON.stringify(featureCollection);
-        vector.features(featureCollection.features);
-        d3.select('#doc_controls .save').property('disabled', false);
-    }
-    updateFeatures();
-    
-    if (featureCollection.features.length) {
-        var bounds = d3.geo.bounds(featureCollection).map(function (c) { return {lon:c[0], lat:c[1]}; });
-        vector.features(featureCollection.features);
-        map.extent(bounds).zoomBy(-0.25);
-    } else if (0 && navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
-        map.center({lat:p.coords.latitude, lon:p.coords.longitude}).zoom(14);
-    });
-    
-    d3.select('.add').on('click', function () {
+    addButton.on('click', function () {
         d3.event.preventDefault();
         addFeature();
     });
-    window.addEventListener('beforeunload', function () {
-        if (d3.select('#doc_controls .save').property('disabled') === false) {
-            return 'You have unsaved changes that will be lost.';
-        }
-    }, false);
+    
+    function zoomToDoc() {
+        var bounds = d3.geo.bounds(doc.content).map(function (c) { return {lon:c[0], lat:c[1]}; });
+        map.extent(bounds).zoomBy(-0.25);
+    }
+    zoomToDoc();
     
     function addFeature() {
         var geom = {type:"Point", coordinates:[]},
@@ -364,55 +351,43 @@ function mapView(container, doc) {
         editGeometry(geom);
     }
     
-    var editingGeometry = null;
-    function editGeometry(geom) {
-        mainStage.back("Done", saveEdits).title("Editing shape");
-        d3.select(document.body).classed('editing_shape', true);
-        editor.geometry(editingGeometry = geom);
-        vector.reshow();
-    }
-    function saveEdits() {
-        var newGeometry = editor.geometry();
-        Object.keys(newGeometry).forEach(function (key) {
-            editingGeometry[key] = newGeometry[key];
-            if (key === "geometries") delete editingGeometry["coordinates"];
-            if (key === "coordinates") delete editingGeometry["geometries"];
+    function editFeature(feature) {
+        function zoomToFeature() {
+            var bounds = d3.geo.bounds(feature).map(function (c) { return {lon:c[0], lat:c[1]}; });
+            map.extent(bounds).zoomBy(-0.25);
+        }
+        mainStage.push(function () {
+            this.scene("Edit", shapeView, {map:map, layer:editor, geometry:feature.geometry});
+            this.title("Editing shape", "Zoom map to fit shape", zoomToFeature);
+            zoomToFeature();
         });
-        updateFeatures();
-        finishEditing();
     }
-    function deleteEdited() {
-        var removedFeature = featureCollection.features.filter(function (f) { return f.geometry === editingGeometry; })[0];
-        console.log(featureCollection.features.length);
-        featureCollection.features = featureCollection.features.filter(function (f) { return f !== removedFeature; });
-        console.log(featureCollection.features.length);
-        updateFeatures();
-        finishEditing();
-    }
-    function finishEditing() {
-        // TODO: this should simply be cleanup function on shapeView
-        mainStage.pop();
-        editor.geometry(editingGeometry = null);
-        vector.reshow();
-        d3.select(document.body).classed('editing_shape', false);
-    }
-    d3.select('#shape_controls .cancel').on('click', function () {
-        d3.event.preventDefault();
-        finishEditing();
-    });
-    d3.select('#shape_controls .save').on('click', function () {
-        d3.event.preventDefault();
-        saveEdits();
-    });
-    d3.select('#shape_controls .delete').on('click', function () {
-        d3.event.preventDefault();
-        deleteEdited();
-    });
     
     return function () {
         root.classed('mapView', false);
     };
 }
+
+
+function shapeView(container, ctx) {
+    var root = d3.select(container)/*.html('')*/.classed('mapView', true);      // assume container is shared and just use existing map
+    
+    ctx.layer.geometry(ctx.geometry);
+    
+    return function () {
+        var editor = ctx.layer,
+            newGeometry = editor.geometry(),
+            editingGeometry = ctx.geometry;
+        Object.keys(newGeometry).forEach(function (key) {
+            editingGeometry[key] = newGeometry[key];
+            if (key === "geometries") delete editingGeometry["coordinates"];
+            if (key === "coordinates") delete editingGeometry["geometries"];
+        });
+        editor.geometry(null);
+        root.classed('mapView', false);
+    }
+}
+
 </script>
 </body>
 </html>
