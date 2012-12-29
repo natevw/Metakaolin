@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html manifest="richland.appcache">
 <head>
     <meta charset="utf-8">
     <title>Metakaolin</title>
@@ -478,13 +478,14 @@ function listView(container) {
 
 function mapView(container, ctx) {
     var root = d3.select(container).html('').classed('mapView', true),
-            map = root.append('svg:svg'),
+            mapContainer = root.append('svg:svg'),
             addButton = root.append('a').classed('action', true).classed('add', true).text("+"),
             mapCredit = root.append('p').classed('mapCredit', true);
     
     var po = org.polymaps,
-        map = po.map().container(map.node()),
+        map = po.map().container(mapContainer.node()),
         DEFAULT_BOUNDS = [{"lon":-119.55479507338985,"lat":46.04672743284027},{"lon":-118.709894726065,"lat":46.3892651319496}];
+    dbgMap = map;
     map.add(po.interact()).zoomRange([0,24]);
         // TODO: properly attribute whichever layer is used
     var tiles = po.image().on('load', function (e) {
@@ -693,6 +694,36 @@ try {
     model.put({_id:'list_trigger'});
     model.del('list_trigger');
 }
+
+function generateAppCache() {
+    var baseURL = window.location.href.replace(/index\.html$/, ''),
+        scripts = d3.selectAll('script').datum(function () { return this.src.slice(baseURL.length); }).data(),
+        tiles = tilesInExtent(dbgMap.extent(), 18).map(MAP_OPTIONS[0].url);
+    
+    function tilesInExtent(extent, zoom) {
+        var tileSW = org.polymaps.map.locationCoordinate(extent[0]),
+            tileNE = org.polymaps.map.locationCoordinate(extent[1]);
+        
+        var tiles = [];
+        for (var z = 0; z <= zoom; z +=1) {
+            var zoomMultiplier = 1 << z,
+                minX = Math.floor(tileSW.column * zoomMultiplier),
+                maxX = Math.floor(tileNE.column * zoomMultiplier),
+                minY = Math.floor(tileNE.row * zoomMultiplier),
+                maxY = Math.floor(tileSW.row * zoomMultiplier);
+            for (var x = minX; x <= maxX; x += 1) {
+                for (var y = minY; y <= maxY; y += 1) {
+                    tiles.push({zoom:z,column:x,row:y});
+                }
+            }
+        }
+        return tiles;
+    }
+    
+    return [].concat("CACHE MANIFEST", "CACHE:", scripts, tiles, "NETWORK:", "*").join('\n');
+}
+
+
 </script>
 </body>
 </html>
