@@ -72,6 +72,10 @@
         .mainContent.listView {
             overflow: auto;
         }
+        .mainContent.listView .loadingNote {
+            text-align: center;
+            font-style: italic;
+        }
         .mainContent.listView ul.maps {
             padding-left: 0;
         }
@@ -360,9 +364,9 @@ var SHAPE_COLORS = [
     {name:"Violet", val:"violet"}
 ];
 
-
 function listView(container) {
     var root = d3.select(container).html('').classed('listView', true),
+            loading = root.append('p').classed('loadingNote', true).text("List may still be loading…"),
             list = root.append('ul').classed('maps', true),
                 addMap = list.append('li').classed('addMap', true).append('h2').append('a').classed('action', true).text("New map…");
     
@@ -450,9 +454,13 @@ function listView(container) {
         });
         mapItems.exit().remove();
         mapItems.order();
+        loading.remove();
+        console.log("updated");
     }
     model.watch(updateList);
     updateList();
+    // HACK: put handwavy loading notification back after first list update, unless a number of items there already
+    if (list.node().childElementCount < 2) { root.node().insertBefore(loading.node(), root.node().firstChild); console.log("YES", loading.node().parentNode); }
     
     return function () {
         root.classed('listView', false);
@@ -649,7 +657,7 @@ function shapeView(container, ctx) {
     }
 }
 
-Pouch("idb://metakaolin", function (e,db) {
+function hookUpPouch(e,db) {
     if (e) throw e;
     dbgDB = db;
     
@@ -666,8 +674,13 @@ Pouch("idb://metakaolin", function (e,db) {
         Pouch.replicate(dbURL, db, {continuous:false, filter:ddocName+"/geodocs"});
         Pouch.replicate(db, dbURL, {continuous:true});
     }
-});
-
+}
+try {
+    Pouch("idb://metakaolin", hookUpPouch);
+} catch (e) {
+    model.put({_id:'list_trigger'});
+    model.del('list_trigger');
+}
 </script>
 </body>
 </html>
