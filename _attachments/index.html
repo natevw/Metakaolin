@@ -412,7 +412,7 @@ function listView(container) {
             function showBasemap() {
                 var basemap = mapInfoByKey[doc.basemap];
                 ctx.basemap.url(basemap.url);
-                ctx.mapCredit.html(basemap.attr);
+                ctx.mapCredit.html(basemap.attr).selectAll('a').attr('target', "_blank");
             }
             showBasemap();
         });
