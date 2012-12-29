@@ -502,7 +502,6 @@ function mapView(container, ctx) {
             d3.select(f.element).on('click', function () {
                 d3.event.stopPropagation();
                 d3.event.preventDefault();
-                addButton.style('display', "none");
                 editFeature(f.data);
             }).on("mouseover", function () {
                 d3.select(this).classed('hover', true);
@@ -577,6 +576,7 @@ function mapView(container, ctx) {
                 bounds = zoomableBounds(zoomFeature);
             map.extent(bounds).zoomBy(-0.25);
         }
+        addButton.style('display', "none");
         mainStage.push(function () {
             var featureName = (feature.properties && typeof feature.properties === 'object') ? feature.properties.name : feature.properties,
                 ctx = {map:map, layer:editor, geometry:feature.geometry};
