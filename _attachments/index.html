@@ -166,6 +166,7 @@
             text-align: center;
         }
         .dialog .dialogContent {
+            position: absolute;
             top: 4em; bottom: 4em;
             left: 0; right: 0;
             overflow: auto;
@@ -182,6 +183,9 @@
             background: #333;
         }
         
+        .dialogContent h3 {
+            clear: both;
+        }
         .dialogContent > label {
             display: block;
             font-size: 1.25em;
@@ -594,7 +598,11 @@ function mapView(container, ctx) {
                            nameEntry = nameLabel.append('input').attr('value', (nameProp && typeof nameProp === 'object') ? JSON.stringify(nameProp) : nameProp),
                         colorLabel = root.append('h3').text("Choose a color:"),
                         colorOptions = root.append('ul').classed('colorChoices', true),
-                        deleteShape = root.append('a').classed('action', true).classed('delete', true).text("Remove feature?");
+                        deleteShape = root.append('a').classed('action', true).classed('delete', true).text("Remove feature?"),
+                        usageNotesLabel = root.append('h3').text("Drawing instructions"),
+                        usageNotes1 = root.append('p').html("Double click–drag on a point to create a new node.<br>Drop one node onto another to combine them."),
+                        usageNotes2 = root.append('p').html("Pull on the middle of a line to refine it.<br>Drag from the end of a line (near a node) to disconnect it."),
+                        usageNotes3 = root.append('p').html("You also can watch a <a href=\"http://vimeo.com/53201727\" target=_blank>rough demo video</a> to see how editing works.");
                 
                 colorOptions.selectAll('li').data(SHAPE_COLORS).enter()
                     .append('li').style('background', function (d) { return d.val; }).attr('title', function (d) { return d.name; }).on('click', function (d) {
