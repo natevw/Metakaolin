@@ -110,8 +110,11 @@
         .mainContent.mapView  .mapCredit {
             position: absolute;
             margin: 0;
-            left: 4px; bottom: 4px;
+            right: 4px; bottom: 4px;
             font-size: 50%;
+            background: rgba(150,150,150,0.5);
+            border-radius: 2px;
+            padding: 2px 5px;
         }
         .mainContent.mapView > .add {
             display: block;
@@ -312,7 +315,7 @@ var MAP_OPTIONS = [{
 },{
     key:'moa', name:"Mapquest Open Aerial",
     url: org.polymaps.url("http://otile{S}.mqcdn.com/tiles/1.0.0/sat/{Z}/{X}/{Y}.jpg").hosts([1,2,3,4]),
-    attr: "Portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency. Tiles Courtesy of <a href=\"http://www.mapquest.com/\">MapQuest <img src=\"http://developer.mapquest.com/content/osm/mq_logo.png\"></a>"  
+    attr: "Portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency. Tiles Courtesy of <a href=\"http://www.mapquest.com/\">MapQuest</a>."  
 },{
     key:'osm', name:"OpenStreetMap",
     url: org.polymaps.url("http://{S}tile.openstreetmap.org/{Z}/{X}/{Y}.png").hosts(["a.", "b.", "c.", ""]),
@@ -349,7 +352,7 @@ function listView(container) {
                     doc.basemap = basemapOptions.property('value');
                     basemapCredit.html(mapInfoByKey[doc.basemap].attr);
                     showBasemap();
-                }).attr('value', doc.basemap);
+                }).property('value', doc.basemap);
                 basemapCredit.html(mapInfoByKey[doc.basemap].attr);
                 
                 deleteDoc.on('click', function () {
