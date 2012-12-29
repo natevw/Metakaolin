@@ -585,7 +585,7 @@ function mapView(container, ctx) {
             var featureName = (feature.properties && typeof feature.properties === 'object') ? feature.properties.name : feature.properties,
                 ctx = {map:map, layer:editor, geometry:feature.geometry};
             ctx.removeShape = function () {
-                var features = doc.contents.features,
+                var features = doc.content.features,
                     featureIdx = features.indexOf(feature);
                 if (~featureIdx) features.splice(featureIdx, 1);
             };
