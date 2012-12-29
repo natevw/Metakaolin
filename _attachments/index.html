@@ -455,12 +455,16 @@ function listView(container) {
         mapItems.exit().remove();
         mapItems.order();
         loading.remove();
-        console.log("updated");
     }
     model.watch(updateList);
     updateList();
     // HACK: put handwavy loading notification back after first list update, unless a number of items there already
-    if (list.node().childElementCount < 2) { root.node().insertBefore(loading.node(), root.node().firstChild); console.log("YES", loading.node().parentNode); }
+    if (list.node().childElementCount < 2) {
+        root.node().insertBefore(loading.node(), root.node().firstChild);
+        setTimeout(function () {
+            loading.remove();
+        }, 10*1000);
+    }
     
     return function () {
         root.classed('listView', false);
