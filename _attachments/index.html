@@ -497,7 +497,6 @@ function mapView(container, ctx) {
             }).on("mouseout", function () {
                 d3.select(this).classed('hover', false);
             }).classed('color' + (i % 3), true).style('stroke', f.data.color).style('fill', f.data.color);
-            console.log(f.data);
         });
     }).features(doc.content.features);
     d3.select(vector.container()).classed('viewer', true);
