@@ -96,9 +96,12 @@
             font-size: 75%;
             font-style: italic;
         }
-        .mainContent.listView ul.maps > li > .delete {
+        .mainContent.listView ul.maps > li > .delete, .dialogContent .delete {
             color: darkred;
             float: right;
+        }
+        .dialogContent .delete {
+            padding-top: 22px;
         }
         
         .mainContent.mapView {
@@ -133,9 +136,9 @@
         .viewer { fill: grey; fill-opacity: 0.5; stroke: black; }
         .viewer polyline { fill: none !important; stroke-width: 3px; }
         .viewer .hover { fill-opacity: 0.25; stroke-opacity: 0.75; }
-        .viewer .color0 { fill: red; stroke: red; }
-        .viewer .color1 { fill: green; stroke: green; }
-        .viewer .color2 { fill: blue; stroke: blue; }
+        .viewer .color0 { fill: #311; stroke: #311; }
+        .viewer .color1 { fill: #131; stroke: #131; }
+        .viewer .color2 { fill: #113; stroke: #113; }
         .mainContent.mapView.editing .viewer { opacity: 0.1; }
         .mainContent.mapView.editing .viewer .hover { fill-opacity: inherit; stroke-opacity: inherit; }
         
@@ -150,7 +153,7 @@
             position: absolute;
             top: 22px; bottom: 22px;
             left: 75px; right: 75px;
-            background: white;
+            background: #fefeff;
             box-shadow: 2px 2px 16px 2px black;
             border-radius: 3px;
             overflow: hidden;
@@ -175,12 +178,12 @@
             background: #333;
         }
         
-        .dialog .docSettings > label {
+        .dialogContent > label {
             display: block;
             font-size: 1.25em;
             margin-bottom: 22px;
         }
-        .dialog .docSettings input, .dialog .docSettings select {
+        .dialogContent input, .dialogContent select {
             display: block;
             width: 100%;
             font-size: 35px;
@@ -191,6 +194,24 @@
             margin-top: 0;
             padding: 0 8px;
         }
+        
+        .dialog .colorChoices > li {
+            cursor: pointer;
+            display: inline-block;
+            width: 44px; height: 44px;
+            vertical-align: top;
+            background: #eee;
+            font-size: 50%;
+            text-align: center;
+            box-sizing: border-box;
+            padding-top: 16px;
+            border: 1px solid grey;
+            margin: 1px;
+        }
+        .dialog .colorChoices > li.selected {
+            border: 4px dotted #66f;
+        }
+        
     </style>
 </head>
 <body>
@@ -326,6 +347,20 @@ var MAP_OPTIONS = [{
     attr:"Map tiles by <a href=\"http://stamen.com\">Stamen Design</a>, under <a href=\"http://creativecommons.org/licenses/by/3.0\">CC BY 3.0</a>. Data by <a href=\"http://openstreetmap.org\">OpenStreetMap</a>, under <a href=\"http://creativecommons.org/licenses/by-sa/3.0\">CC BY SA</a>."
 }];
 
+var SHAPE_COLORS = [
+    {name:"Black", val:"black"},
+    {name:"Grey", val:"grey"},
+    {name:"White", val:"white"},
+    {name:"Red", val:"red"},
+    {name:"Orange", val:"orange"},
+    {name:"Yellow", val:"yellow"},
+    {name:"Green", val:"green"},
+    {name:"Blue", val:"blue"},
+    {name:"Indigo", val:"indigo"},
+    {name:"Violet", val:"violet"}
+];
+
+
 function listView(container) {
     var root = d3.select(container).html('').classed('listView', true),
             list = root.append('ul').classed('maps', true),
@@ -337,7 +372,7 @@ function listView(container) {
                 mapInfoByKey = {};
             MAP_OPTIONS.forEach(function (info) { mapInfoByKey[info.key] = info; });
             this.scene("Features", mapView, ctx);
-            this.title(doc.title, "Zoom to fit", ctx.zoomToDoc);
+            this.title(doc.title || "Untitled", "Zoom to fit", ctx.zoomToDoc);
             this.extra("Edit", "Map document settings", function (container) {
                 var root = d3.select(container).html('').classed('docSettings', true),
                     nameLabel = root.append('label').text("Map name:"),
@@ -455,12 +490,14 @@ function mapView(container, ctx) {
             d3.select(f.element).on('click', function () {
                 d3.event.stopPropagation();
                 d3.event.preventDefault();
+                addButton.style('display', "none");
                 editFeature(f.data);
             }).on("mouseover", function () {
                 d3.select(this).classed('hover', true);
             }).on("mouseout", function () {
                 d3.select(this).classed('hover', false);
-            }).classed('color' + (i % 3), true);
+            }).classed('color' + (i % 3), true).style('stroke', f.data.color).style('fill', f.data.color);
+            console.log(f.data);
         });
     }).features(doc.content.features);
     d3.select(vector.container()).classed('viewer', true);
@@ -525,17 +562,69 @@ function mapView(container, ctx) {
                 delete feature._new;
                 return;
             }
-            var bounds = zoomableBounds(feature);
+            var zoomFeature = editor.geometry(),
+                bounds = zoomableBounds(zoomFeature);
             map.extent(bounds).zoomBy(-0.25);
         }
         mainStage.push(function () {
-            this.scene("Edit", shapeView, {map:map, layer:editor, geometry:feature.geometry});
-            this.title("Editing shape", "Zoom map to fit shape", zoomToFeature);
+            var featureName = (feature.properties && typeof feature.properties === 'object') ? feature.properties.name : feature.properties,
+                ctx = {map:map, layer:editor, geometry:feature.geometry};
+            ctx.removeShape = function () {
+                var features = doc.contents.features,
+                    featureIdx = features.indexOf(feature);
+                if (~featureIdx) features.splice(featureIdx, 1);
+            };
+            this.scene("Edit", shapeView, ctx);
+            this.title("Editing " + ((featureName) ? ('"' + featureName + '"') : "shape"), "Zoom map to fit shape", zoomToFeature);
+            this.extra("Details", "Feature details", function (container) {
+                var nameProp = feature.properties;
+                var root = d3.select(container).html('').classed('shapeDetails', true),
+                        nameLabel = root.append('label').text("Name").attr('title', "Enter a name (or JSON properties) for this feature"),
+                           nameEntry = nameLabel.append('input').attr('value', (nameProp && typeof nameProp === 'object') ? JSON.stringify(nameProp) : nameProp),
+                        colorLabel = root.append('h3').text("Choose a color:"),
+                        colorOptions = root.append('ul').classed('colorChoices', true),
+                        deleteShape = root.append('a').classed('action', true).classed('delete', true).text("Remove feature?");
+                
+                colorOptions.selectAll('li').data(SHAPE_COLORS).enter()
+                    .append('li').style('background', function (d) { return d.val; }).attr('title', function (d) { return d.name; }).on('click', function (d) {
+                        feature.color = d.val;
+                        updateColorSelection();
+                    });
+                colorOptions.insert('li', "li").text("None").attr('title', "Don't assign a color").on('click', function () {
+                    delete feature.color;
+                    updateColorSelection();
+                });
+                function updateColorSelection() {
+                    colorOptions.selectAll('li').classed('selected', function (d) {
+                        return (d) ? d.val === feature.color : !feature.color;
+                    });
+                }
+                updateColorSelection();
+                
+                deleteShape.on('click', function () {
+                    var really = confirm("This feature will be removed from the map.");
+                    if (!really) return;
+                    ctx.removeShape();
+                    mainStage.pop();
+                });
+                
+                return function () {
+                    try {
+                        // if text field looks like JSON, use its value
+                        feature.properties = JSON.parse(nameEntry.property('value'))
+                    } catch (e) {
+                        // otherwise just assign as string/null
+                        feature.properties = nameEntry.property('value') || null;
+                    }
+                    root.classed('shapeDetails', false);
+                };
+            });
             zoomToFeature();
         });
     }
     
     return function () {
+        doc.last_modified = new Date().toISOString();
         model.put(doc);
         root.classed('mapView', false);
     };
