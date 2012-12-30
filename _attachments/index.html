@@ -220,6 +220,21 @@
             border: 4px dotted #66f;
         }
         
+        .dialog .appSettings > progress {
+            display: block;
+            margin-top: 0.5em;
+        }
+        
+        .dialog .appSettings .bad { color: red; }
+        .dialog .appSettings .wait { color: gold; }
+        .dialog .appSettings .good { color: green; }
+        
+        .dialog .appSettings .replDisableNote {
+            margin-top: -1.5em;
+            font-style: italic;
+            color: grey;
+        }
+        
     </style>
 </head>
 <body>
@@ -368,7 +383,84 @@ var mainStage = stage(document.body);
 mainStage.push(function () {
     this.scene("Maps", listView);
     this.title("All maps");
-    //this.extra("Setup", "Adjust application settings", function () {});
+    this.extra("Setup", "Adjust application settings", function (container) {
+        var root = d3.select(container).html('').classed('appSettings', true),
+                offlineHeader = root.append('h3').text("Offline availability"),
+                offlineStatusLabel = root.append('span').text("Status: "),
+                    offlineStatus = offlineStatusLabel.append('output').text("Unknown"),
+                offlineProgress = root.append('progress'),
+                replicationHeader = root.append('h3').text("Replication"),
+                replicationLabel = root.append('label').text("Continously replicate with CouchDB"),
+                replicationStyle = replicationLabel.append('select').attr('disabled', true),
+                replicationExplanation = root.append('p').classed('replDisableNote', true).text("Replication not available in static Dev Derby demo.");
+        
+        replicationStyle.selectAll('option').data(["Off", "From source", "To source", "Bi-directional"]).enter()
+            .append('option').text(function (d) { return d; });
+        
+        var lastProgress = null;
+        function updateDisplays(e) {
+            if (e) switch (e.type) {
+                case 'downloading':
+                   lastProgress = 0;
+                   break;
+                case 'progress':
+                   lastProgress = (e.lengthComputable) ? (e.loaded / e.total) : null;
+                   break;
+            }
+            var applicationCache = window.applicationCache || {UNCACHED:-1, status:-1};
+            switch (applicationCache.status) {
+                case applicationCache.UNCACHED:
+                case applicationCache.OBSOLETE:
+                   offlineStatus.text("Not cached.").classed('good', false).classed('wait', false).classed('bad', true);
+                   offlineProgress.attr('value', 0);
+                   break;
+                case applicationCache.IDLE:
+                   offlineStatus.text("Ready.").classed('good', true).classed('wait', false).classed('bad', false);
+                   offlineProgress.attr('value', 1);
+                   break;
+                case applicationCache.CHECKING:
+                case applicationCache.DOWNLOADING:
+                   offlineStatus.text("In progress.").classed('good', false).classed('wait', true).classed('bad', false);
+                   offlineProgress.attr('value', lastProgress);
+                   break;
+                case applicationCache.UPDATEREADY:
+                   offlineProgress.attr('value', 1);
+                   offlineStatus.text("Refresh for latest.").classed('good', false).classed('wait', true).classed('bad', false);
+                   break;
+            }
+        }
+        
+        if (window.applicationCache) {
+            applicationCache.addEventListener('checking', updateDisplays, true);
+            applicationCache.addEventListener('noupdate', updateDisplays, true);
+            applicationCache.addEventListener('downloading', updateDisplays, true);
+            applicationCache.addEventListener('progress', updateDisplays, true);
+            applicationCache.addEventListener('cached', updateDisplays, true);
+            applicationCache.addEventListener('updateready', updateDisplays, true);
+            applicationCache.addEventListener('obsolete', updateDisplays, true);
+            applicationCache.addEventListener('error', updateDisplays, true);
+        }
+        updateDisplays();
+        
+        // WORKAROUND: Firefox doesn't reliably fire reliable app cache events (at best?)
+        var ffPolling;
+        if (~navigator.userAgent.indexOf('Firefox')) setInterval(updateDisplays, 2500);
+        
+        return function () {
+            clearTimeout(ffPolling);
+            if (window.applicationCache) {
+                applicationCache.removeEventListener('checking', updateDisplays, true);
+                applicationCache.removeEventListener('noupdate', updateDisplays, true);
+                applicationCache.removeEventListener('downloading', updateDisplays, true);
+                applicationCache.removeEventListener('progress', updateDisplays, true);
+                applicationCache.removeEventListener('cached', updateDisplays, true);
+                applicationCache.removeEventListener('updateready', updateDisplays, true);
+                applicationCache.removeEventListener('obsolete', updateDisplays, true);
+                applicationCache.removeEventListener('error', updateDisplays, true);
+            }
+            root.classed('appSettings', false);
+        }
+    });
 });
 
 function listView(container) {
