@@ -377,6 +377,10 @@ function stage(container) {
 };
 
 
+// WORKAROUND: FireFox doesn't send applicationCache events unless they're registered early on
+// see https://bugzilla.mozilla.org/show_bug.cgi?id=683794#c11
+applicationCache.addEventListener('cached', function () {}, true);
+
 var model = memcouch.db();
 
 var mainStage = stage(document.body);
