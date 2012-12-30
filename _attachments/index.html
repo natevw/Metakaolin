@@ -787,7 +787,7 @@ function hookUpPouch(e,db) {
     }
 }
 try {
-    Pouch("idb://metakaolin", hookUpPouch);
+    Pouch("metakaolin", hookUpPouch);
 } catch (e) {
     model.put({_id:'list_trigger'});
     model.del('list_trigger');
