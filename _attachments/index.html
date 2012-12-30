@@ -623,15 +623,8 @@ function mapView(container, ctx) {
     
     function zoomableBounds(feature) {
         var bounds = d3.geo.bounds(feature).map(function (c) { return {lon:c[0], lat:c[1]}; }),
-            MIN_DIFF = 0.0005,
-            SINGLE_D = 0.01;            // zoom a lot wider for single points
-        if (bounds[0].lat === bounds[1].lat && bounds[0].lon === bounds[1].lon) {
-            bounds[0].lat -= SINGLE_D / 2;
-            bounds[1].lat += SINGLE_D / 2;
-            bounds[0].lon -= SINGLE_D / 2;
-            bounds[1].lon += SINGLE_D / 2;
-            return bounds;
-        }
+            MIN_DIFF = 0.0005;
+        if (bounds[0].lat === bounds[1].lat && bounds[0].lon === bounds[1].lon) return;     // just don't zoom
         // pad features that are just legitimately tiny
         if ((bounds[1].lat - bounds[0].lat) < MIN_DIFF) {
             bounds[0].lat -= MIN_DIFF / 2;
@@ -650,7 +643,7 @@ function mapView(container, ctx) {
             return;
         }
         var bounds = zoomableBounds(doc.content);
-        map.extent(bounds).zoomBy(-0.25);
+        if (bounds) map.extent(bounds).zoomBy(-0.25);
     }
     zoomToDoc();
     
@@ -677,7 +670,7 @@ function mapView(container, ctx) {
             }
             var zoomFeature = editor.geometry(),
                 bounds = zoomableBounds(zoomFeature);
-            map.extent(bounds).zoomBy(-0.25);
+            if (bounds) map.extent(bounds).zoomBy(-0.25);
         }
         addButton.style('display', "none");
         mainStage.push(function () {
