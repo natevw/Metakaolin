@@ -437,6 +437,7 @@ mainStage.push(function () {
                    offlineStatus.text("Refresh for latest.").classed('good', false).classed('wait', true).classed('bad', false);
                    break;
             }
+            offlineProgress.text((offlineProgress.attr('value') * 100).toFixed(1) + "%");
         }
         
         if (window.applicationCache) {
