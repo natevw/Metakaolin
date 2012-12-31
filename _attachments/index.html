@@ -453,7 +453,7 @@ mainStage.push(function () {
         
         // WORKAROUND: Firefox doesn't reliably fire reliable app cache events (at best?)
         var ffPolling;
-        if (~navigator.userAgent.indexOf('Firefox')) setInterval(updateDisplays, 2500);
+        if (~navigator.userAgent.indexOf('Firefox')) ffPolling = setInterval(updateDisplays, 2500);
         
         return function () {
             clearTimeout(ffPolling);
