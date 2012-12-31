@@ -235,6 +235,9 @@
             color: grey;
         }
         
+        .dialog .appSettings .ffBugWarning {
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -381,11 +384,6 @@ function stage(container) {
     return stage;
 };
 
-
-// WORKAROUND: FireFox doesn't send applicationCache events unless they're registered early on
-// see https://bugzilla.mozilla.org/show_bug.cgi?id=683794#c11
-applicationCache.addEventListener('cached', function () {}, true);
-
 var model = memcouch.db();
 
 var mainStage = stage(document.body);
@@ -452,12 +450,10 @@ mainStage.push(function () {
         }
         updateDisplays();
         
-        // WORKAROUND: Firefox doesn't reliably fire reliable app cache events (at best?)
-        var ffPolling;
-        if (~navigator.userAgent.indexOf('Firefox')) ffPolling = setInterval(updateDisplays, 2500);
+        if (~navigator.userAgent.indexOf('Firefox')) offlineStatusLabel.append('p').classed('ffBugWarning', true)
+            .html("NOTE: status information and progress are <a href=\"https://bugzilla.mozilla.org/show_bug.cgi?id=825618\">broken in Firefox</a>. If you leave this page open long enough to download the complete sample tileset (~135MB, over 3000 files) then upon refresh you should see a Ready state.");
         
         return function () {
-            clearTimeout(ffPolling);
             if (window.applicationCache) {
                 applicationCache.removeEventListener('checking', updateDisplays, true);
                 applicationCache.removeEventListener('noupdate', updateDisplays, true);
