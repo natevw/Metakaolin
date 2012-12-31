@@ -1,0 +1,220 @@
+html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+}
+html {
+    font-family: "Trebuchet MS", sans-serif;
+}
+.menuBar {
+    position: absolute;
+    left: 0; right: 0;
+    z-index: 1;
+    height: 44px;
+    display: -webkit-box; display: -moz-box;
+    -webkit-box-orient: horizontal; -moz-box-orient: horizontal;
+    box-shadow: 0 1px 2px black;
+    background: black;
+}
+.menuBar > * {
+    display: block;
+    line-height: 44px;
+    min-width: 44px;
+    color: white;
+    background: grey;
+    text-align: center;
+    margin: 0 1px;
+    padding: 0 5px;
+}
+.menuBar > :first-child { margin-left: 0; }
+.menuBar > :last-child { margin-right: 0; }
+.menuBar > .title {
+    font-size: 100%;
+    font-weight: normal;
+    -webkit-box-flex: 1; -moz-box-flex: 1;
+}
+a, a:visited {
+    color: darkblue;
+}
+a:hover {
+    color: blue;
+}
+a.action {
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+.mainContent {
+    display: block;
+    position: absolute;
+    top: 44px; bottom: 0px;
+    left: 0; right: 0;
+}
+
+.mainContent.listView {
+    overflow: auto;
+}
+.mainContent.listView .loadingNote {
+    text-align: center;
+    font-style: italic;
+}
+.mainContent.listView ul.maps {
+    padding-left: 0;
+}
+.mainContent.listView ul.maps > li {
+    list-style: none;
+    margin: 1em; padding: 1em;
+    border: 1px solid grey;
+    border-radius: 5px;
+    background: #eee;
+    color: black;
+}
+.mainContent.listView ul.maps > li.addMap {
+    text-align: center;
+    color: grey;
+}
+.mainContent.listView ul.maps > li > h2 {
+    margin: 0;
+    font-weight: normal;
+}
+.mainContent.listView ul.maps > li > span {
+    margin: 0;
+    font-size: 75%;
+    font-style: italic;
+}
+.mainContent.listView ul.maps > li > .delete, .dialogContent .delete {
+    color: darkred;
+    float: right;
+}
+.dialogContent .delete {
+    padding-top: 22px;
+}
+
+.mainContent.mapView {
+    overflow: hidden;       /* not sure why necessary, but otherwise simply adding svg element causes 4px body overflow */
+}
+.mainContent.mapView > .map {
+    width: 100%; height: 100%;
+}
+.mainContent.mapView  .mapCredit {
+    position: absolute;
+    margin: 0;
+    right: 4px; bottom: 4px;
+    font-size: 50%;
+    background: rgba(150,150,150,0.5);
+    border-radius: 2px;
+    padding: 2px 5px;
+}
+.mainContent.mapView > .add {
+    display: block;
+    position: absolute;
+    top: 25px; left: 5px;
+    text-align: center;
+    line-height: 1em; font-family: "Courier New", "Courier", monospace; font-weight: bold;
+    width: 1em; height: 1em;
+    border-radius: 1em;
+    border: 2px solid white;
+    background: black;
+    color: white;
+    font-size: 44px;
+}
+
+.viewer { fill: grey; fill-opacity: 0.5; stroke: black; }
+.viewer polyline { fill: none !important; stroke-width: 3px; }
+.viewer .hover { fill-opacity: 0.25; stroke-opacity: 0.75; }
+.viewer .color0 { fill: #311; stroke: #311; }
+.viewer .color1 { fill: #131; stroke: #131; }
+.viewer .color2 { fill: #113; stroke: #113; }
+.mainContent.mapView.editing .viewer { opacity: 0.1; }
+.mainContent.mapView.editing .viewer .hover { fill-opacity: inherit; stroke-opacity: inherit; }
+
+.dialog {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 0; right: 0;
+    z-index: 2;
+    background: rgba(127,127,127,0.75);
+}
+.dialog > .frame {
+    position: absolute;
+    top: 22px; bottom: 22px;
+    left: 75px; right: 75px;
+    background: #fefeff;
+    box-shadow: 2px 2px 16px 2px black;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.dialog > .frame > h2 {
+    text-align: center;
+}
+.dialog .dialogContent {
+    position: absolute;
+    top: 4em; bottom: 4em;
+    left: 0; right: 0;
+    overflow: auto;
+    padding: 0 1em;
+}
+.dialog > .frame > .done {
+    display: block;
+    position: absolute;
+    bottom: 0; width: 100%;
+    text-align: center;
+    border-top: 1px solid black;
+    padding: .5em;
+    font-size: 1.5em; color: white;
+    background: #333;
+}
+
+.dialogContent h3 {
+    clear: both;
+}
+.dialogContent > label {
+    display: block;
+    font-size: 1.25em;
+    margin-bottom: 22px;
+}
+.dialogContent input, .dialogContent select {
+    display: block;
+    width: 100%;
+    font-size: 35px;
+}
+.dialog .docSettings .mapCredit {
+    font-size: 50%;
+    font-variant: italic;
+    margin-top: 0;
+    padding: 0 8px;
+}
+
+.dialog .colorChoices > li {
+    cursor: pointer;
+    display: inline-block;
+    width: 44px; height: 44px;
+    vertical-align: top;
+    background: #eee;
+    font-size: 50%;
+    text-align: center;
+    box-sizing: border-box;
+    padding-top: 16px;
+    border: 1px solid grey;
+    margin: 1px;
+}
+.dialog .colorChoices > li.selected {
+    border: 4px dotted #66f;
+}
+
+.dialog .appSettings > progress {
+    display: block;
+    margin-top: 0.5em;
+}
+
+.dialog .appSettings .bad { color: red; }
+.dialog .appSettings .wait { color: gold; }
+.dialog .appSettings .good { color: green; }
+
+.dialog .appSettings .replDisableNote {
+    margin-top: -1.5em;
+    font-style: italic;
+    color: grey;
+}
+
+.dialog .appSettings .ffBugWarning {
+    font-style: italic;
+}

@@ -1,7 +1,8 @@
 CACHE MANIFEST
-# App + Columbia Point tiles, v7e
+# App + Columbia Point tiles, v8
 CACHE:
 index.html
+app.css
 d3.min.js
 fermata.min.js
 memcouch.js
@@ -10,6 +11,8 @@ pouch.alpha.min.js
 polymaps.min.js
 polymaps.editor.js
 polymaps.viewer.js
+stage.js
+app.js
 http://temp1.argyl.es/preview-key/0/0/0.jpg
 http://temp2.argyl.es/preview-key/1/0/0.jpg
 http://temp3.argyl.es/preview-key/1/0/1.jpg
