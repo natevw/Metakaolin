@@ -239,6 +239,11 @@
 </head>
 <body>
 <script>
+    // redirect ourselves to working page when necessary.
+    // developer.mozilla.org launches demo encrypted, which means same-origin resources only — no 3rd-party map tiles!
+    if (location.protocol === 'https:') location = location.href.replace(/^https:/, 'http:');
+</script>
+<script>
 var MAP_OPTIONS = [{
     key:'argyles',
     url: org.polymaps.url("http://temp{S}.argyl.es/preview-key/{Z}/{X}/{Y}.jpg").hosts([1, 2, 3]),
