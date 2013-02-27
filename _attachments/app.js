@@ -6,7 +6,7 @@ function hookUpPouch(e,db) {
     dbgDB = db;
     
     var status = memcouch.slaveToPouch(model, db);
-    window.addEventListener('beforeunload', function () {
+    window.addEventListener('beforeunload', function (e) {
         if (status.changesPending) return (e.returnValue = "Not all of your changes have been saved to disk yet, please wait!");
     }, false);
     
