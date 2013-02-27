@@ -20,7 +20,7 @@ function hookUpPouch(e,db) {
     }
 }
 try {
-    Pouch("metakaolin", hookUpPouch);
+    Pouch("metakaolin2", hookUpPouch);      // "2" because latest Pouch seems incompatible with previously used version
 } catch (e) {
     alert("Could not set up persistent storage!\n\nYou may try the app, but all your data will be lost when you close/refresh the page.");
 }
