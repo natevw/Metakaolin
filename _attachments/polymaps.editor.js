@@ -356,6 +356,31 @@ var po_metakaolin_editor = function () {
                 c.ui.el.setAttribute('stroke-width', CONNECTION_WIDTH);
                 c.ui.el._graph_connecion = c;
                 
+                if (!window.gMarker) {
+                    gMarker = po.svg('marker');
+                    gMarker.setAttribute('id', "testMarker1");
+                    //gMarker.setAttribute('viewBox', "-50 -50 100 100");
+                    gMarker.setAttribute('markerUnits', "userSpaceOnUse");
+                    gMarker.setAttribute('orient', "auto");
+                    //gMarker.setAttribute('markerHeight', "100");
+                    //gMarker.setAttribute('markerWidth', "100");
+                    gMarker.setAttribute('overflow', "visible");
+                    var sq = po.svg('circle');
+                    sq.setAttribute('cx', MARKER_RADIUS * 1.5);
+                    sq.setAttribute('r', MARKER_RADIUS / 2);
+                    sq.setAttribute('fill', "yellow");
+                    gMarker.appendChild(sq);
+                    editor.map().container().appendChild(gMarker);
+                    
+                    var marker2 = gMarker.cloneNode(true);
+                    marker2.setAttribute('id', "testMarker2");
+                    marker2.firstChild.setAttribute('cx', -MARKER_RADIUS * 1.5);
+                    editor.map().container().appendChild(marker2);
+                }
+                c.ui.el.setAttribute('marker-start', "url(#testMarker1)");
+                c.ui.el.setAttribute('marker-end', "url(#testMarker2)");
+                
+                
                 c.ui.newVertex = po.svg('circle');
                 c.ui.newVertex.setAttribute('r', MARKER_RADIUS);
                 c.ui.newVertex.setAttribute('fill', "none");
