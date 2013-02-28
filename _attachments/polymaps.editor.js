@@ -330,7 +330,7 @@ var po_metakaolin_editor = function () {
                             destroyNode(n);
                         } else {
                             n.ui.createNew = true;
-                            n.ui.el.setAttribute('stroke', "green");
+                            n.ui.el.setAttribute('stroke', (Object.keys(n.connectedTo).length === MAX_CONNECTIONS) ? "yellow" : "green");
                             setTimeout(function () {
                                 delete n.ui.createNew;
                                 n.ui.el.removeAttribute('stroke');
@@ -367,7 +367,7 @@ var po_metakaolin_editor = function () {
                     var sq = po.svg('line');
                     sq.setAttribute('x1', 0);
                     sq.setAttribute('x2', MARKER_RADIUS * 2);
-                    sq.setAttribute('stroke', "red");
+                    sq.setAttribute('stroke', "yellow");
                     sq.setAttribute('stroke-opacity', "0.125");
                     sq.setAttribute('stroke-width', CONNECTION_WIDTH);
                     gMarker.appendChild(sq);
@@ -411,7 +411,7 @@ var po_metakaolin_editor = function () {
                     _setPosition(c.ui.newVertex, 'c_', pos);
                     if (_dist(c.ui.n1.position, pos) > 2*MARKER_RADIUS &&
                         _dist(c.ui.n2.position, pos) > 2*MARKER_RADIUS) c.ui.newVertex.setAttribute('stroke', "green");
-                    else c.ui.newVertex.setAttribute('stroke', "red");
+                    else c.ui.newVertex.setAttribute('stroke', "yellow");
                 }, false);
                 c.ui.el.removeEventListener('mouseout', c.ui.mouseoutListener, false);
                 c.ui.el.addEventListener('mouseout', c.ui.mouseoutListener = function (e) {
