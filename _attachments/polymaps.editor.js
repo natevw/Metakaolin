@@ -32,7 +32,7 @@ var po_metakaolin_editor = function () {
         DOUBLE_CLICK_MSEC = 300,
         MAX_CONNECTIONS = 2,        // prevent full-fledged node networks from springing up
         MARKER_RADIUS = (window.TouchEvent) ? 25 : 5,
-        HIGHLIGHT_WIDTH = 2,
+        HIGHLIGHT_WIDTH = Math.log(MARKER_RADIUS),
         CONNECTION_WIDTH = (window.TouchEvent) ? 15 : 5;
     
     var editor = po.layer(load);
@@ -353,28 +353,38 @@ var po_metakaolin_editor = function () {
                 c.ui = {};
                 c.ui.el = po.svg('line');
                 c.ui.el.setAttribute('stroke', "grey");
+                c.ui.el.setAttribute('stroke-opacity', "0.75");
                 c.ui.el.setAttribute('stroke-width', CONNECTION_WIDTH);
                 c.ui.el._graph_connecion = c;
                 
                 if (!window.gMarker) {
                     gMarker = po.svg('marker');
                     gMarker.setAttribute('id', "testMarker1");
-                    //gMarker.setAttribute('viewBox', "-50 -50 100 100");
                     gMarker.setAttribute('markerUnits', "userSpaceOnUse");
                     gMarker.setAttribute('orient', "auto");
-                    //gMarker.setAttribute('markerHeight', "100");
-                    //gMarker.setAttribute('markerWidth', "100");
                     gMarker.setAttribute('overflow', "visible");
-                    var sq = po.svg('circle');
-                    sq.setAttribute('cx', MARKER_RADIUS * 1.5);
-                    sq.setAttribute('r', MARKER_RADIUS / 2);
-                    sq.setAttribute('fill', "yellow");
+                    
+                    var sq = po.svg('line');
+                    sq.setAttribute('x1', 0);
+                    sq.setAttribute('x2', MARKER_RADIUS * 2);
+                    sq.setAttribute('stroke', "red");
+                    sq.setAttribute('stroke-opacity', "0.125");
+                    sq.setAttribute('stroke-width', CONNECTION_WIDTH);
+                    gMarker.appendChild(sq);
+                    sq = po.svg('line');
+                    sq.setAttribute('x1', MARKER_RADIUS * 2);
+                    sq.setAttribute('x2', MARKER_RADIUS * 2 + 3);
+                    sq.setAttribute('stroke', "green");
+                    sq.setAttribute('stroke-opacity', "0.125");
+                    sq.setAttribute('stroke-width', CONNECTION_WIDTH);
                     gMarker.appendChild(sq);
                     editor.map().container().appendChild(gMarker);
                     
                     var marker2 = gMarker.cloneNode(true);
                     marker2.setAttribute('id', "testMarker2");
-                    marker2.firstChild.setAttribute('cx', -MARKER_RADIUS * 1.5);
+                    marker2.childNodes[0].setAttribute('x2', -MARKER_RADIUS * 2);
+                    marker2.childNodes[1].setAttribute('x1', -MARKER_RADIUS * 2);
+                    marker2.childNodes[1].setAttribute('x2', -MARKER_RADIUS * 2 - 3);
                     editor.map().container().appendChild(marker2);
                 }
                 c.ui.el.setAttribute('marker-start', "url(#testMarker1)");
