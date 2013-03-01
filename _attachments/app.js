@@ -111,7 +111,10 @@ function listView(container) {
     var root = d3.select(container).html('').classed('listView', true),
             loading = root.append('p').classed('loadingNote', true).text("List may still be loading…"),
             list = root.append('ul').classed('maps', true),
-                addMap = list.append('li').classed('addMap', true).append('h2').append('a').classed('action', true).text("New map…");
+                addMap = list.append('li').classed('addMap', true).append('h2').append('a').classed('action', true).text("New map…"),
+            demoVideo = root.append('div').classed('demoLink', true),
+                demoLabel = demoVideo.append('span').text("New to Metakaolin? "),
+                demoLink = demoVideo.append('a').attr('href', "https://vimeo.com/60812792").text("Watch the tutorial first!");
     
     function openDocument(doc) {
         mainStage.push(function () {
@@ -332,9 +335,9 @@ function mapView(container, ctx) {
                         colorOptions = root.append('ul').classed('colorChoices', true),
                         deleteShape = root.append('a').classed('action', true).classed('delete', true).text("Remove feature?"),
                         usageNotesLabel = root.append('h3').text("Drawing instructions"),
-                        usageNotes1 = root.append('p').html("Double click–drag on a point to create a new node.<br>Drop one node onto another to combine them."),
+                        usageNotes1 = root.append('p').html("Double tap–drag on a point to create a new node.<br>Drop one node onto another to combine them."),
                         usageNotes2 = root.append('p').html("Pull on the middle of a line to refine it.<br>Drag from the end of a line (near a node) to disconnect it."),
-                        usageNotes3 = root.append('p').html("You also can watch a <a href=\"http://vimeo.com/53201727\" target=_blank>rough demo video</a> to see how editing works.");
+                        usageNotes3 = root.append('p').html("<a href=\"https://vimeo.com/60812792\" target=_blank>Watch the tutorial</a> to see editing in action.");
                 
                 colorOptions.selectAll('li').data(SHAPE_COLORS).enter()
                     .append('li').style('background', function (d) { return d.val; }).attr('title', function (d) { return d.name; }).on('click', function (d) {

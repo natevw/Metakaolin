@@ -84,6 +84,11 @@ a.action {
     color: darkred;
     float: right;
 }
+.mainContent.listView .demoLink {
+    color: orange;
+    text-align: center;
+}
+
 .dialogContent .delete {
     padding-top: 22px;
 }
