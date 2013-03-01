@@ -357,12 +357,13 @@ var po_metakaolin_editor = function () {
                 c.ui.el.setAttribute('stroke-width', CONNECTION_WIDTH);
                 c.ui.el._graph_connecion = c;
                 
-                if (!window.gMarker) {
-                    gMarker = po.svg('marker');
-                    gMarker.setAttribute('id', "testMarker1");
-                    gMarker.setAttribute('markerUnits', "userSpaceOnUse");
-                    gMarker.setAttribute('orient', "auto");
-                    gMarker.setAttribute('overflow', "visible");
+                var marker1 = editor.map().container().querySelector('#testMarker1');
+                if (!marker1) {
+                    marker1 = po.svg('marker');
+                    marker1.setAttribute('id', "testMarker1");
+                    marker1.setAttribute('markerUnits', "userSpaceOnUse");
+                    marker1.setAttribute('orient', "auto");
+                    marker1.setAttribute('overflow', "visible");
                     
                     var sq = po.svg('line');
                     sq.setAttribute('x1', 0);
@@ -370,17 +371,17 @@ var po_metakaolin_editor = function () {
                     sq.setAttribute('stroke', "yellow");
                     sq.setAttribute('stroke-opacity', "0.125");
                     sq.setAttribute('stroke-width', CONNECTION_WIDTH);
-                    gMarker.appendChild(sq);
+                    marker1.appendChild(sq);
                     sq = po.svg('line');
                     sq.setAttribute('x1', MARKER_RADIUS * 2);
                     sq.setAttribute('x2', MARKER_RADIUS * 2 + 3);
                     sq.setAttribute('stroke', "green");
                     sq.setAttribute('stroke-opacity', "0.125");
                     sq.setAttribute('stroke-width', CONNECTION_WIDTH);
-                    gMarker.appendChild(sq);
-                    editor.map().container().appendChild(gMarker);
+                    marker1.appendChild(sq);
+                    editor.map().container().appendChild(marker1);
                     
-                    var marker2 = gMarker.cloneNode(true);
+                    var marker2 = marker1.cloneNode(true);
                     marker2.setAttribute('id', "testMarker2");
                     marker2.childNodes[0].setAttribute('x2', -MARKER_RADIUS * 2);
                     marker2.childNodes[1].setAttribute('x1', -MARKER_RADIUS * 2);
