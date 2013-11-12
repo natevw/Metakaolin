@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# App + Columbia Point tiles, v8b
+# App + Columbia Point tiles, v8c
 CACHE:
 index.html
 app.css
@@ -7,7 +7,7 @@ d3.min.js
 fermata.min.js
 memcouch.js
 memcouch.pouchdb.js
-pouch.alpha.min.js
+pouchdb-nightly.min.js
 polymaps.min.js
 polymaps.editor.js
 polymaps.viewer.js
